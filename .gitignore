@@ -25,3 +25,8 @@ Thumbs.db
 
 # Kiro
 .kiro/
+
+# Markdown docs (contract, proposal, response)
+*.md
+!portal/DEPLOYMENT.md
+!**/README.md

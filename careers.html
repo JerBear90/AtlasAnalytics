@@ -1,0 +1,193 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas Analytics | Careers - Join the Future of Satellite Economic Intelligence</title>
+<meta name="description" content="Build your career at Atlas Analytics. Join a remote-first team of scientists, engineers, and economists using satellite imagery and machine learning to deliver real-time GDP forecasting to institutional clients worldwide.">
+<link href="https://fonts.googleapis.com/css2?family=Encode+Sans+Condensed:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0b1a;--panel:rgba(15,15,35,0.92);--nav-bg:#141428;--text:#fff;--dim:#b0b0c8;--coral:#e8546a;--coral-h:#d4435a;--border:rgba(255,255,255,0.1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Encode Sans Condensed',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:0;background:linear-gradient(180deg,rgba(11,11,26,.3),rgba(11,11,26,.6) 40%,rgba(11,11,26,.85)),url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80') center/cover no-repeat}
+.wrap{position:relative;z-index:1}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:transparent;border-bottom:1px solid transparent;transition:background .3s,border-color .3s}
+nav.scrolled{background:var(--nav-bg);border-bottom-color:var(--border)}
+.logo{display:flex;flex-direction:column;align-items:flex-start;text-decoration:none;color:var(--text);gap:4px}
+.logo img{height:120px;width:auto}
+.ham{background:var(--coral);border:none;color:#fff;width:44px;height:44px;border-radius:8px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.ham:hover{background:var(--coral-h)}
+.mnav{display:none;position:fixed;inset:0;z-index:99;background:var(--panel);flex-direction:column;align-items:center;justify-content:center;gap:24px}
+.mnav.open{display:flex}
+.mnav a{color:var(--text);text-decoration:none;font-size:20px;font-weight:500;padding:12px 24px;border-radius:8px}
+.mnav a:hover{background:rgba(232,84,106,.15)}
+.mnav-x{position:absolute;top:20px;right:40px;background:none;border:none;color:var(--text);font-size:28px;cursor:pointer}
+.hero{padding:160px 40px 80px;text-align:center;max-width:900px;margin:0 auto}
+.hero h1{font-size:52px;font-weight:700;margin-bottom:20px;line-height:1.15}
+.hero p{font-size:18px;color:var(--dim);line-height:1.7;max-width:650px;margin:0 auto 32px}
+.sec{padding:60px 40px;max-width:1200px;margin:0 auto}
+.sec-label{font-size:16px;text-transform:uppercase;letter-spacing:2px;color:var(--coral);font-weight:600;margin-bottom:12px}
+.sec-title{font-size:32px;font-weight:700;margin-bottom:16px}
+.sec-desc{font-size:16px;color:var(--dim);line-height:1.7;max-width:600px;margin-bottom:48px}
+.btn{display:inline-block;background:var(--coral);color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;transition:background .2s;border:none;cursor:pointer}
+.btn:hover{background:var(--coral-h)}
+.btn-o{display:inline-block;background:transparent;color:var(--coral);text-decoration:none;padding:13px 35px;border-radius:8px;font-size:16px;font-weight:600;border:1px solid var(--coral);transition:all .2s;cursor:pointer;margin-left:12px}
+.btn-o:hover{background:rgba(232,84,106,.1)}
+.perks-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.perk{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:32px;transition:transform .3s,border-color .3s}
+.perk:hover{transform:translateY(-4px);border-color:rgba(232,84,106,.3)}
+.perk-icon{font-size:36px;margin-bottom:16px;display:block}
+.perk h3{font-size:18px;font-weight:600;margin-bottom:8px}
+.perk p{font-size:16px;color:var(--dim);line-height:1.6}
+.jobs-list{display:flex;flex-direction:column;gap:16px}
+.job{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:28px 32px;display:flex;justify-content:space-between;align-items:center;transition:transform .2s,border-color .2s;gap:20px}
+.job:hover{transform:translateY(-2px);border-color:rgba(232,84,106,.3)}
+.job-info{flex:1}
+.job-title{font-size:18px;font-weight:600;margin-bottom:6px}
+.job-meta{display:flex;gap:16px;flex-wrap:wrap}
+.job-tag{font-size:16px;color:var(--dim);background:rgba(255,255,255,.06);padding:4px 12px;border-radius:20px}
+.job-dept{font-size:16px;color:var(--coral);font-weight:500}
+.process-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;counter-reset:step}
+.step{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:32px;text-align:center;position:relative}
+.step::before{counter-increment:step;content:counter(step);display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:var(--coral);color:#fff;font-size:16px;font-weight:700;margin:0 auto 16px}
+.step h3{font-size:16px;font-weight:600;margin-bottom:8px}
+.step p{font-size:16px;color:var(--dim);line-height:1.5}
+.values-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.value{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:32px;display:flex;gap:20px;align-items:flex-start;transition:border-color .3s}
+.value:hover{border-color:rgba(232,84,106,.3)}
+.value-icon{font-size:28px;flex-shrink:0}
+.value h3{font-size:17px;font-weight:600;margin-bottom:6px}
+.value p{font-size:16px;color:var(--dim);line-height:1.6}
+.cta-wrap{margin:80px auto 0;max-width:1200px;padding:0 40px}
+.cta{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:60px;text-align:center}
+.cta h2{font-size:28px;font-weight:700;margin-bottom:12px}
+.cta p{font-size:16px;color:var(--dim);margin-bottom:32px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6}
+footer{margin-top:100px;text-align:center;padding:60px 40px 0;position:relative}
+footer::before{content:'';display:block;width:60%;max-width:600px;height:1px;background:var(--border);margin:0 auto 48px}
+.ft-logo{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:20px}
+.ft-logo img{height:120px;width:auto}
+.ft-brand{font-size:16px;text-transform:uppercase;letter-spacing:3px;color:var(--dim)}
+.ft-loc{font-size:16px;color:var(--dim);margin-bottom:40px}
+.ft-bot{display:flex;justify-content:space-between;align-items:center;padding:24px 0;border-top:1px solid var(--border);max-width:1200px;margin:0 auto}
+.ft-copy{font-size:16px;color:var(--dim)}
+.ft-soc{display:flex;gap:24px}
+.ft-soc a{color:var(--dim);text-decoration:none;transition:color .2s;font-size:24px}
+.ft-soc a:hover{color:var(--text)}
+.ditl-grid{display:flex;flex-direction:column;gap:16px}
+.ditl{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:28px 32px;display:flex;gap:24px;align-items:flex-start;transition:border-color .3s}
+.ditl:hover{border-color:rgba(232,84,106,.3)}
+.ditl-time{font-size:16px;font-weight:700;color:var(--coral);white-space:nowrap;min-width:80px;padding-top:2px}
+.ditl-body{flex:1}
+.ditl-title{font-size:17px;font-weight:600;margin-bottom:6px}
+.ditl-desc{font-size:16px;color:var(--dim);line-height:1.6}
+@media(max-width:768px){.ditl{flex-direction:column;gap:8px}.ditl-time{min-width:auto}}
+@media(max-width:1024px){.perks-grid{grid-template-columns:repeat(2,1fr)}.process-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:768px){nav{padding:14px 20px}.logo img{height:55px}.hero{padding:130px 20px 60px}.hero h1{font-size:32px}.hero p{font-size:16px}.sec{padding:40px 16px}.sec-title{font-size:26px}.sec-desc{max-width:100%}.perks-grid{grid-template-columns:1fr}.process-grid{grid-template-columns:1fr}.values-grid{grid-template-columns:1fr}.value{flex-direction:column}.job{flex-direction:column;align-items:flex-start;gap:16px}.job .btn{width:100%;text-align:center}.job-meta{gap:8px}.cta-wrap{padding:0 16px}.cta{padding:40px 20px}.cta h2{font-size:22px}.btn-o{margin-left:0;margin-top:12px;display:block;text-align:center}footer{padding:40px 16px 0;margin-top:60px}.ft-logo img{height:80px}.ft-bot{flex-direction:column;gap:16px;text-align:center}.ft-soc{justify-content:center}}
+@media(max-width:480px){.hero{padding:120px 14px 50px}.hero h1{font-size:26px}.hero p{font-size:16px}.sec{padding:32px 12px}.sec-title{font-size:22px}.perk{padding:24px}.step{padding:24px}.value{padding:24px}.job{padding:20px 16px}.cta{padding:32px 16px}.cta h2{font-size:20px}.btn{padding:12px 28px;width:100%;text-align:center}.btn-o{padding:12px 28px;width:100%;text-align:center}footer{padding:32px 12px 0}.ft-bot{padding:20px 0}}
+</style>
+</head>
+<body>
+<div class="bg" role="presentation"></div>
+<div class="wrap">
+<nav>
+<a href="index.html" class="logo"><img src="https://atlasanalytics.com/wp-content/uploads/2025/01/Group-30.png" alt="Atlas Analytics Logo"></a>
+<button class="ham" id="mt" aria-label="Open menu">&#9776;</button>
+</nav>
+<div class="mnav" id="mn">
+<button class="mnav-x" id="mc" aria-label="Close menu">&times;</button>
+<a href="index.html">Home</a><a href="teams.html">Team</a><a href="testimonials.html">Testimonials</a><a href="blog.html">Insights</a><a href="dashboard.html">Dashboard</a><a href="careers.html">Careers</a><a href="index.html#demo" class="btn">Request a Demo</a>
+</div>
+<section class="hero">
+<h1>Help Institutions See Tomorrow's Economy Today</h1>
+<p>Atlas Analytics is building the global standard for real-time economic insight. Join a remote-first team where satellite science, machine learning, and macroeconomics converge to shape how the world's leading institutions make decisions.</p>
+<a href="#openings" class="btn">View Open Roles</a>
+</section>
+<section class="sec">
+<div class="sec-label">Why Atlas Analytics</div>
+<h2 class="sec-title">Built for People Who Move Markets</h2>
+<p class="sec-desc">We invest in the tools, flexibility, and support our team needs to deliver institutional-grade economic intelligence.</p>
+<div class="perks-grid">
+<div class="perk"><span class="perk-icon">&#127758;</span><h3>Remote-First, Globally Distributed</h3><p>Work from anywhere. Our team spans 8 time zones with quarterly in-person gatherings to align on strategy and strengthen collaboration.</p></div>
+<div class="perk"><span class="perk-icon">&#128200;</span><h3>Equity &amp; Comp</h3><p>Competitive salary, meaningful equity, and annual performance bonuses tied to company milestones.</p></div>
+<div class="perk"><span class="perk-icon">&#127891;</span><h3>Learning Budget</h3><p>$5,000 annual stipend for conferences, courses, books, or any professional development you choose.</p></div>
+<div class="perk"><span class="perk-icon">&#9968;</span><h3>Unlimited PTO</h3><p>Take the time you need. We track outcomes, not hours. Minimum 3 weeks encouraged.</p></div>
+<div class="perk"><span class="perk-icon">&#128153;</span><h3>Health &amp; Wellness</h3><p>Full medical, dental, and vision coverage. Plus a monthly wellness stipend for gym, therapy, or whatever keeps you going.</p></div>
+<div class="perk"><span class="perk-icon">&#128640;</span><h3>Institutional-Grade Infrastructure</h3><p>Work with petabytes of satellite imagery, GPU clusters, and proprietary ML pipelines purpose-built for real-time macroeconomic forecasting.</p></div>
+</div>
+</section>
+<section class="sec">
+<div class="sec-label">Culture &amp; Values</div>
+<h2 class="sec-title">The Atlas Constellation</h2>
+<p class="sec-desc">Our culture is guided by a constellation of principles — each one essential to the mission.</p>
+<div class="values-grid">
+<div class="value"><span class="value-icon">&#9728;&#65039;</span><div><h3>Our Sun — Mission</h3><p>Empowering people to see tomorrow's economy today. Every line of code, every model, every forecast serves this purpose. The mission is our gravity.</p></div></div>
+<div class="value"><span class="value-icon">&#127769;</span><div><h3>Our Moon — Vision</h3><p>To become the global standard for real-time economic insight — enabling decision-makers to act with confidence before others can.</p></div></div>
+<div class="value"><span class="value-icon">&#11088;</span><div><h3>Our Stars — Values</h3><p>Intellectual rigor, radical transparency, and relentless curiosity. We measure success by the quality of our predictions and the decisions they enable.</p></div></div>
+<div class="value"><span class="value-icon">&#128752;</span><div><h3>Our Satellites — How We Work</h3><p>Distributed but deeply connected. Async-first with quarterly gatherings. We trust each other to deliver, and we build systems that make collaboration effortless.</p></div></div>
+</div>
+</section>
+<section class="sec">
+<div class="sec-label">Inside Atlas</div>
+<h2 class="sec-title">A Day in the Life</h2>
+<p class="sec-desc">What it actually looks like to work on satellite-derived economic intelligence.</p>
+<div class="ditl-grid">
+<div class="ditl"><div class="ditl-time">9:00 AM</div><div class="ditl-body"><div class="ditl-title">Morning Standup</div><div class="ditl-desc">Quick async check-in across time zones. Teams share overnight model runs, flag anomalies in satellite feeds, and align on the day's priorities.</div></div></div>
+<div class="ditl"><div class="ditl-time">10:30 AM</div><div class="ditl-body"><div class="ditl-title">Deep Work Block</div><div class="ditl-desc">Engineers refine ML pipelines. Economists validate forecast signals against incoming BEA data. Data scientists tune geospatial models on fresh imagery.</div></div></div>
+<div class="ditl"><div class="ditl-time">1:00 PM</div><div class="ditl-body"><div class="ditl-title">Research Review</div><div class="ditl-desc">Cross-functional session where science and economics teams present findings. Recent topic: nighttime luminosity as a leading indicator for port activity.</div></div></div>
+<div class="ditl"><div class="ditl-time">3:30 PM</div><div class="ditl-body"><div class="ditl-title">Client Intelligence Delivery</div><div class="ditl-desc">Weekly nowcast reports go out to 120+ institutional clients. The product team reviews dashboard feedback and prioritizes feature requests.</div></div></div>
+</div>
+</section>
+<section class="sec" id="openings">
+<div class="sec-label">Open Roles</div>
+<h2 class="sec-title">Current Openings</h2>
+<p class="sec-desc">We are scaling across engineering, data science, economics, and operations. Each role directly shapes the forecasts institutions rely on.</p>
+<div class="jobs-list">
+<div class="job"><div class="job-info"><div class="job-title">Senior ML Engineer</div><div class="job-meta"><span class="job-dept">Engineering</span><span class="job-tag">Remote</span><span class="job-tag">Full-time</span></div></div><a href="#" class="btn" style="padding:10px 24px;font-size:16px">Apply</a></div>
+<div class="job"><div class="job-info"><div class="job-title">Geospatial Data Scientist</div><div class="job-meta"><span class="job-dept">Science</span><span class="job-tag">Remote</span><span class="job-tag">Full-time</span></div></div><a href="#" class="btn" style="padding:10px 24px;font-size:16px">Apply</a></div>
+<div class="job"><div class="job-info"><div class="job-title">Quantitative Economist</div><div class="job-meta"><span class="job-dept">Research</span><span class="job-tag">Boston / Remote</span><span class="job-tag">Full-time</span></div></div><a href="#" class="btn" style="padding:10px 24px;font-size:16px">Apply</a></div>
+<div class="job"><div class="job-info"><div class="job-title">Platform Engineer (Infrastructure)</div><div class="job-meta"><span class="job-dept">Engineering</span><span class="job-tag">Remote</span><span class="job-tag">Full-time</span></div></div><a href="#" class="btn" style="padding:10px 24px;font-size:16px">Apply</a></div>
+<div class="job"><div class="job-info"><div class="job-title">Product Designer</div><div class="job-meta"><span class="job-dept">Product</span><span class="job-tag">Remote</span><span class="job-tag">Full-time</span></div></div><a href="#" class="btn" style="padding:10px 24px;font-size:16px">Apply</a></div>
+<div class="job"><div class="job-info"><div class="job-title">Technical Writer</div><div class="job-meta"><span class="job-dept">Operations</span><span class="job-tag">Remote</span><span class="job-tag">Contract</span></div></div><a href="#" class="btn" style="padding:10px 24px;font-size:16px">Apply</a></div>
+</div>
+</section>
+<section class="sec">
+<div class="sec-label">Process</div>
+<h2 class="sec-title">Our Hiring Process</h2>
+<p class="sec-desc">A transparent, four-step process designed to respect your time and evaluate mutual fit.</p>
+<div class="process-grid">
+<div class="step"><h3>Application</h3><p>Submit your resume and a short note on why Atlas interests you. We review every application within a week.</p></div>
+<div class="step"><h3>Intro Call</h3><p>A 30-minute conversation with our recruiting team to learn about your background and share more about the role.</p></div>
+<div class="step"><h3>Technical Round</h3><p>A focused exercise relevant to the role. No trick questions, no whiteboard hazing. Real problems we actually solve.</p></div>
+<div class="step"><h3>Team Meet</h3><p>Meet your future teammates. We want to make sure the fit is mutual. You'll get honest answers about what it's like here.</p></div>
+</div>
+</section>
+<div class="cta-wrap"><div class="cta">
+<h2>Don't See Your Role Listed?</h2>
+<p>We are always looking for exceptional talent at the intersection of satellite science, economics, and engineering. Tell us how you would contribute.</p>
+<a href="#" class="btn">Submit Open Application</a>
+<a href="teams.html" class="btn-o">Meet the Team</a>
+</div></div>
+<footer>
+<div class="ft-logo"><img src="https://atlasanalytics.com/wp-content/uploads/2025/01/Group-30.png" alt="Atlas Analytics Logo"><span class="ft-brand">Atlas Analytics</span></div>
+<div class="ft-loc">Boston, Massachusetts, 02129</div>
+<div class="ft-bot">
+<div class="ft-copy">Copyright 2025. All rights reserved.</div>
+<div class="ft-soc">
+<a href="#" aria-label="Bookmark"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg></a>
+<a href="#" aria-label="X"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+<a href="#" aria-label="YouTube"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M21.543 6.498C22 8.28 22 12 22 12s0 3.72-.457 5.502c-.254.985-.997 1.76-1.938 2.022C17.896 20 12 20 12 20s-5.893 0-7.605-.476c-.945-.266-1.687-1.04-1.938-2.022C2 15.72 2 12 2 12s0-3.72.457-5.502c.254-.985.997-1.76 1.938-2.022C6.107 4 12 4 12 4s5.896 0 7.605.476c.945.266 1.687 1.04 1.938 2.022zM10 15.5l6-3.5-6-3.5v7z"/></svg></a>
+<a href="#" aria-label="LinkedIn"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14m-.5 15.5v-5.3a3.26 3.26 0 00-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 011.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 001.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 00-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg></a>
+</div>
+</div>
+</footer>
+</div>
+<script>
+window.addEventListener('scroll',function(){document.querySelector('nav').classList.toggle('scrolled',window.scrollY>50)});
+var t=document.getElementById('mt'),c=document.getElementById('mc'),n=document.getElementById('mn');
+t.addEventListener('click',function(){n.classList.add('open')});
+c.addEventListener('click',function(){n.classList.remove('open')});
+n.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){n.classList.remove('open')})});
+</script>
+</body>
+</html>

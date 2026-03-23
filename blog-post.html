@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nighttime Luminosity as a Leading Indicator for Port Activity | Atlas Analytics</title>
+<meta name="description" content="Our peer-reviewed study demonstrates how nighttime light intensity around major port facilities correlates with trade volume shifts 4-6 weeks before official customs data. Analysis of 38 countries across three years.">
+<link href="https://fonts.googleapis.com/css2?family=Encode+Sans+Condensed:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0b1a;--panel:rgba(15,15,35,0.92);--nav-bg:#141428;--text:#fff;--dim:#b0b0c8;--coral:#e8546a;--coral-h:#d4435a;--border:rgba(255,255,255,0.1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Encode Sans Condensed',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:0;background:linear-gradient(180deg,rgba(11,11,26,.3),rgba(11,11,26,.6) 40%,rgba(11,11,26,.85)),url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80') center/cover no-repeat}
+.wrap{position:relative;z-index:1}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:transparent;border-bottom:1px solid transparent;transition:background .3s,border-color .3s}
+nav.scrolled{background:var(--nav-bg);border-bottom-color:var(--border)}
+.logo{display:flex;flex-direction:column;align-items:flex-start;text-decoration:none;color:var(--text);gap:4px}
+.logo img{height:120px;width:auto}
+.ham{background:var(--coral);border:none;color:#fff;width:44px;height:44px;border-radius:8px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.ham:hover{background:var(--coral-h)}
+.mnav{display:none;position:fixed;inset:0;z-index:99;background:var(--panel);flex-direction:column;align-items:center;justify-content:center;gap:24px}
+.mnav.open{display:flex}
+.mnav a{color:var(--text);text-decoration:none;font-size:20px;font-weight:500;padding:12px 24px;border-radius:8px}
+.mnav a:hover{background:rgba(232,84,106,.15)}
+.mnav-x{position:absolute;top:20px;right:40px;background:none;border:none;color:var(--text);font-size:28px;cursor:pointer}
+.btn{display:inline-block;background:var(--coral);color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;transition:background .2s;border:none;cursor:pointer}
+.btn:hover{background:var(--coral-h)}
+.btn-o{display:inline-block;background:transparent;color:var(--coral);text-decoration:none;padding:13px 35px;border-radius:8px;font-size:16px;font-weight:600;border:1px solid var(--coral);transition:all .2s;cursor:pointer}
+.btn-o:hover{background:rgba(232,84,106,.1)}
+
+/* Article layout */
+.article-hero{padding:160px 40px 40px;max-width:800px;margin:0 auto}
+.article-breadcrumb{font-size:14px;color:var(--dim);margin-bottom:20px}
+.article-breadcrumb a{color:var(--coral);text-decoration:none}
+.article-breadcrumb a:hover{text-decoration:underline}
+.article-cat{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:var(--coral);font-weight:600;margin-bottom:12px}
+.article-hero h1{font-size:40px;font-weight:700;line-height:1.2;margin-bottom:20px}
+.article-meta{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:32px}
+.article-meta img{width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--border)}
+.article-meta-text{font-size:15px;color:var(--dim);line-height:1.5}
+.article-meta-name{color:var(--text);font-weight:600}
+.article-cover{width:100%;max-width:800px;margin:0 auto 40px;display:block;border-radius:16px;aspect-ratio:16/9;object-fit:cover}
+
+/* Article body */
+.article-body{max-width:720px;margin:0 auto;padding:0 40px 60px}
+.article-body p{font-size:17px;color:var(--dim);line-height:1.85;margin-bottom:24px}
+.article-body h2{font-size:24px;font-weight:700;color:var(--text);margin:40px 0 16px}
+.article-body h3{font-size:20px;font-weight:600;color:var(--text);margin:32px 0 12px}
+.article-body blockquote{border-left:3px solid var(--coral);padding:16px 24px;margin:32px 0;background:rgba(232,84,106,.04);border-radius:0 8px 8px 0}
+.article-body blockquote p{font-size:18px;font-style:italic;color:var(--text);margin-bottom:0}
+.article-body ul,.article-body ol{margin:0 0 24px 24px;color:var(--dim)}
+.article-body li{font-size:17px;line-height:1.8;margin-bottom:8px}
+.article-body a{color:var(--coral);text-decoration:none}
+.article-body a:hover{text-decoration:underline}
+.article-body figure{margin:32px 0}
+.article-body figure img{width:100%;border-radius:12px}
+.article-body figcaption{font-size:14px;color:var(--dim);text-align:center;margin-top:12px;font-style:italic}
+
+/* Key findings box */
+.key-findings{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:32px;margin:32px 0}
+.key-findings h3{font-size:18px;font-weight:700;color:var(--coral);margin-bottom:16px;text-transform:uppercase;letter-spacing:1px;font-size:14px}
+.key-findings ul{list-style:none;margin:0}
+.key-findings li{font-size:16px;color:var(--dim);padding:8px 0;padding-left:20px;position:relative;line-height:1.6}
+.key-findings li::before{content:'→';position:absolute;left:0;color:var(--coral)}
+
+/* Tags */
+.article-tags{display:flex;gap:8px;flex-wrap:wrap;margin:40px 0;padding-top:32px;border-top:1px solid var(--border)}
+.tag{padding:6px 16px;border-radius:20px;font-size:13px;color:var(--dim);border:1px solid var(--border);text-decoration:none;transition:all .2s}
+.tag:hover{color:var(--coral);border-color:var(--coral)}
+
+/* Share */
+.article-share{display:flex;align-items:center;gap:16px;padding:24px 0;border-top:1px solid var(--border);margin-top:8px}
+.article-share span{font-size:14px;color:var(--dim);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.share-link{width:40px;height:40px;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--dim);text-decoration:none;transition:all .2s}
+.share-link:hover{color:var(--coral);border-color:var(--coral)}
+.share-link svg{width:18px;height:18px;fill:currentColor}
+
+/* Author box */
+.author-box{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:32px;display:flex;gap:24px;align-items:center;margin:40px 0}
+.author-box img{width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0}
+.author-box-name{font-size:18px;font-weight:700;margin-bottom:4px}
+.author-box-role{font-size:15px;color:var(--coral);margin-bottom:8px}
+.author-box-bio{font-size:15px;color:var(--dim);line-height:1.6}
+
+/* Related posts */
+.related{margin-top:48px}
+.related h2{font-size:22px;font-weight:700;margin-bottom:24px}
+.related-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.rel-card{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:transform .3s,border-color .3s}
+.rel-card:hover{transform:translateY(-3px);border-color:rgba(232,84,106,.3)}
+.rel-card img{width:100%;height:160px;object-fit:cover}
+.rel-card-body{padding:20px}
+.rel-card-cat{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--coral);font-weight:600;margin-bottom:6px}
+.rel-card-title{font-size:16px;font-weight:600;line-height:1.3}
+.rel-card-title a{color:var(--text);text-decoration:none}
+.rel-card-title a:hover{color:var(--coral)}
+.rel-card-date{font-size:13px;color:var(--dim);margin-top:8px}
+
+/* Footer */
+footer{margin-top:80px;text-align:center;padding:60px 40px 0;position:relative}
+footer::before{content:'';display:block;width:60%;max-width:600px;height:1px;background:var(--border);margin:0 auto 48px}
+.ft-logo{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:20px}
+.ft-logo img{height:120px;width:auto}
+.ft-brand{font-size:16px;text-transform:uppercase;letter-spacing:3px;color:var(--dim)}
+.ft-loc{font-size:16px;color:var(--dim);margin-bottom:40px}
+.ft-bot{display:flex;justify-content:space-between;align-items:center;padding:24px 0;border-top:1px solid var(--border);max-width:1200px;margin:0 auto}
+.ft-copy{font-size:16px;color:var(--dim)}
+.ft-soc{display:flex;gap:24px}
+.ft-soc a{color:var(--dim);text-decoration:none;transition:color .2s;font-size:24px}
+.ft-soc a:hover{color:var(--text)}
+
+@media(max-width:768px){
+nav{padding:14px 20px}.logo img{height:55px}
+.article-hero{padding:130px 20px 32px}
+.article-hero h1{font-size:28px}
+.article-cover{border-radius:12px;margin-bottom:28px}
+.article-body{padding:0 16px 40px}
+.article-body p{font-size:16px}
+.article-body h2{font-size:22px}
+.author-box{flex-direction:column;text-align:center}
+.related-grid{grid-template-columns:1fr}
+footer{padding:40px 16px 0;margin-top:60px}
+.ft-logo img{height:80px}
+.ft-bot{flex-direction:column;gap:16px;text-align:center}
+.ft-soc{justify-content:center}
+}
+@media(max-width:480px){
+.article-hero{padding:120px 14px 24px}
+.article-hero h1{font-size:24px}
+.article-body{padding:0 12px 32px}
+.article-body p{font-size:15px}
+.key-findings{padding:24px}
+.author-box{padding:24px}
+.author-box img{width:64px;height:64px}
+.rel-card img{height:140px}
+.btn{padding:12px 28px;width:100%;text-align:center}
+footer{padding:32px 12px 0}
+.ft-bot{padding:20px 0}
+.ft-logo img{height:60px}
+}
+</style>
+</head>
+<body>
+<div class="bg" role="presentation"></div>
+<div class="wrap">
+
+<nav>
+<a href="index.html" class="logo"><img src="https://atlasanalytics.com/wp-content/uploads/2025/01/Group-30.png" alt="Atlas Analytics Logo"></a>
+<button class="ham" id="mt" aria-label="Open menu">&#9776;</button>
+</nav>
+<div class="mnav" id="mn">
+<button class="mnav-x" id="mc" aria-label="Close menu">&times;</button>
+<a href="index.html">Home</a><a href="teams.html">Team</a><a href="testimonials.html">Testimonials</a><a href="blog.html">Insights</a><a href="dashboard.html">Dashboard</a><a href="careers.html">Careers</a><a href="index.html#demo" class="btn">Request a Demo</a>
+</div>
+
+<!-- Article header -->
+<header class="article-hero">
+<div class="article-breadcrumb"><a href="blog.html">Insights</a> &gt; Research</div>
+<div class="article-cat">Research</div>
+<h1>Nighttime Luminosity as a Leading Indicator for Port Activity: A 38-Country Analysis</h1>
+<div class="article-meta">
+<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&h=120&fit=crop&crop=face" alt="Dr. Elena Vasquez">
+<div class="article-meta-text">
+<div class="article-meta-name">Dr. Elena Vasquez</div>
+March 10, 2026 &#183; 12 min read
+</div>
+</div>
+</header>
+
+<img class="article-cover" src="https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?w=1200&q=80" alt="Satellite view of global shipping lanes illuminated at night">
+
+<!-- Article content -->
+<article class="article-body">
+
+<p>For decades, trade flow data has arrived weeks or months after the economic activity it describes. Customs declarations, port authority reports, and container throughput statistics follow bureaucratic timelines that were designed in an era before satellite observation was possible. By the time institutional investors and policymakers receive this data, the opportunity to act on it has often passed.</p>
+
+<p>At Atlas Analytics, we've spent three years developing and validating an alternative approach: using nighttime luminosity data captured by satellite to estimate port activity levels in near real-time. This paper presents our findings across 38 countries and 127 major port facilities.</p>
+
+<div class="key-findings">
+<h3>Key Findings</h3>
+<ul>
+<li>Nighttime luminosity around port facilities correlates with official trade volume data at 92% accuracy</li>
+<li>Satellite-derived signals lead official customs data by 4-6 weeks on average</li>
+<li>The methodology is robust across developed and emerging markets, with strongest performance in East Asian and Northern European ports</li>
+<li>Combining luminosity with vessel AIS data improves accuracy to 95% for the top 50 global ports</li>
+</ul>
+</div>
+
+<h2>Why Nighttime Light Matters</h2>
+
+<p>Port facilities operate around the clock. When trade volumes increase, so does the intensity and spatial extent of nighttime illumination — from container yard floodlights to crane operations to truck staging areas. This relationship between light output and economic activity is well-established in development economics, but its application to high-frequency trade monitoring is relatively new.</p>
+
+<p>Our approach uses the VIIRS Day/Night Band sensor aboard the Suomi NPP satellite, which captures calibrated radiance measurements at approximately 750-meter resolution. We process nightly passes to extract luminosity values within precisely defined port boundaries, then apply temporal smoothing and seasonal adjustment to produce a clean signal.</p>
+
+<h2>Methodology</h2>
+
+<p>The study covers the period from January 2023 through December 2025. For each of the 127 port facilities in our sample, we:</p>
+
+<ol>
+<li>Defined geospatial boundaries using a combination of OpenStreetMap data and manual satellite image review</li>
+<li>Extracted nightly VIIRS radiance values within each boundary, filtering for cloud cover and lunar illumination</li>
+<li>Applied a 7-day rolling average with outlier rejection to produce a stable weekly luminosity index</li>
+<li>Calibrated the index against official port throughput data (TEUs for container ports, tonnage for bulk facilities)</li>
+<li>Validated out-of-sample using a rolling 6-month holdout window</li>
+</ol>
+
+<blockquote>
+<p>The correlation between our satellite-derived port activity index and official throughput data exceeded 0.90 for 89 of the 127 facilities studied — a level of accuracy that makes this a viable real-time proxy for trade flow monitoring.</p>
+</blockquote>
+
+<h2>Results by Region</h2>
+
+<h3>East Asia</h3>
+<p>The strongest correlations were observed in East Asian ports, where 24/7 operations and high container density produce clear luminosity signatures. Shanghai, Busan, and Singapore all showed correlations above 0.94. The lead time over official data averaged 5.2 weeks for this region.</p>
+
+<h3>Northern Europe</h3>
+<p>Rotterdam, Hamburg, and Antwerp showed correlations between 0.91 and 0.93. Seasonal variation in daylight hours required additional calibration for winter months, but the adjusted signal remained highly reliable.</p>
+
+<h3>Emerging Markets</h3>
+<p>Performance was more variable in emerging market ports, with correlations ranging from 0.82 to 0.91. The primary challenge is inconsistent official data quality for validation. However, this is precisely where the satellite approach adds the most value — providing reliable trade flow estimates where ground-truth data is sparse or delayed.</p>
+
+<h2>Implications for Investors</h2>
+
+<p>For macro-focused institutional investors, the practical implications are significant. A 4-6 week lead on trade flow data translates directly into earlier visibility on net exports — a GDP component that frequently surprises consensus estimates. In our backtesting, incorporating the satellite-derived port activity index into a standard GDP nowcasting model reduced forecast error by 23% for the net exports component.</p>
+
+<p>Several Atlas clients have already integrated this signal into their systematic strategies. One top-20 macro fund reported that the port activity index contributed to a 280 basis point alpha improvement in their macro book over two quarters — primarily through earlier positioning around trade balance surprises.</p>
+
+<h2>What's Next</h2>
+
+<p>We're currently extending this methodology in two directions. First, we're adding vessel AIS (Automatic Identification System) data as a complementary signal, which improves accuracy to 95% for the top 50 global ports. Second, we're developing port-specific models that can distinguish between container, bulk, and energy trade — enabling more granular GDP component forecasting.</p>
+
+<p>The full peer-reviewed paper is available through our research portal. Atlas Analytics clients can access the weekly port activity index through the standard API and dashboard.</p>
+
+<!-- Tags -->
+<div class="article-tags">
+<a href="#" class="tag">Satellite Data</a>
+<a href="#" class="tag">Trade Flows</a>
+<a href="#" class="tag">GDP Forecasting</a>
+<a href="#" class="tag">Port Activity</a>
+<a href="#" class="tag">Nighttime Luminosity</a>
+<a href="#" class="tag">Peer-Reviewed</a>
+</div>
+
+<!-- Share -->
+<div class="article-share">
+<span>Share</span>
+<a href="#" class="share-link" aria-label="Share on X"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+<a href="#" class="share-link" aria-label="Share on LinkedIn"><svg viewBox="0 0 24 24"><path d="M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14m-.5 15.5v-5.3a3.26 3.26 0 00-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 011.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 001.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 00-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg></a>
+<a href="#" class="share-link" aria-label="Copy link"><svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg></a>
+</div>
+
+<!-- Author box -->
+<div class="author-box">
+<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=face" alt="Dr. Elena Vasquez">
+<div>
+<div class="author-box-name">Dr. Elena Vasquez</div>
+<div class="author-box-role">Chief Executive Officer, Atlas Analytics</div>
+<div class="author-box-bio">Former NASA remote sensing lead with 15 years in Earth observation systems. Pioneered the satellite-to-GDP methodology that drives Atlas Analytics.</div>
+</div>
+</div>
+
+<!-- Related posts -->
+<div class="related">
+<h2>Related Articles</h2>
+<div class="related-grid">
+<div class="rel-card">
+<img src="https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&q=80" alt="Data visualization">
+<div class="rel-card-body">
+<div class="rel-card-cat">Methodology</div>
+<div class="rel-card-title"><a href="#">How We Validate Satellite Signals Against BEA Advance Estimates</a></div>
+<div class="rel-card-date">Mar 3, 2026</div>
+</div>
+</div>
+<div class="rel-card">
+<img src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&q=80" alt="Market charts">
+<div class="rel-card-body">
+<div class="rel-card-cat">Market Commentary</div>
+<div class="rel-card-title"><a href="#">Q1 2026 GDP Nowcast: What Satellite Data Is Telling Us About Consumer Spending</a></div>
+<div class="rel-card-date">Feb 24, 2026</div>
+</div>
+</div>
+<div class="rel-card">
+<img src="https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=600&q=80" alt="Satellite">
+<div class="rel-card-body">
+<div class="rel-card-cat">Research</div>
+<div class="rel-card-title"><a href="#">Agricultural Output Estimation via Multi-Spectral Imagery</a></div>
+<div class="rel-card-date">Feb 12, 2026</div>
+</div>
+</div>
+</div>
+</div>
+
+</article>
+
+<footer>
+<div class="ft-logo"><img src="https://atlasanalytics.com/wp-content/uploads/2025/01/Group-30.png" alt="Atlas Analytics Logo"><span class="ft-brand">Atlas Analytics</span></div>
+<div class="ft-loc">Boston, Massachusetts, 02129</div>
+<div class="ft-bot">
+<div class="ft-copy">Copyright 2025. All rights reserved.</div>
+<div class="ft-soc">
+<a href="#" aria-label="Bookmark"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg></a>
+<a href="#" aria-label="X"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+<a href="#" aria-label="YouTube"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M21.543 6.498C22 8.28 22 12 22 12s0 3.72-.457 5.502c-.254.985-.997 1.76-1.938 2.022C17.896 20 12 20 12 20s-5.893 0-7.605-.476c-.945-.266-1.687-1.04-1.938-2.022C2 15.72 2 12 2 12s0-3.72.457-5.502c.254-.985.997-1.76 1.938-2.022C6.107 4 12 4 12 4s5.896 0 7.605.476c.945.266 1.687 1.04 1.938 2.022zM10 15.5l6-3.5-6-3.5v7z"/></svg></a>
+<a href="#" aria-label="LinkedIn"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14m-.5 15.5v-5.3a3.26 3.26 0 00-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 011.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 001.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 00-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg></a>
+</div>
+</div>
+</footer>
+</div>
+
+<script>
+window.addEventListener('scroll',function(){document.querySelector('nav').classList.toggle('scrolled',window.scrollY>50)});
+var t=document.getElementById('mt'),c=document.getElementById('mc'),n=document.getElementById('mn');
+t.addEventListener('click',function(){n.classList.add('open')});
+c.addEventListener('click',function(){n.classList.remove('open')});
+n.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){n.classList.remove('open')})});
+</script>
+</body>
+</html>

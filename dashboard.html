@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas Analytics | GDP Forecasting Dashboard - Real-Time Satellite Economic Data</title>
+    <meta name="description" content="Explore Atlas Analytics' live GDP forecasting dashboard. Track quarterly predictions, weekly economic indicators, net exports, and private inventories powered by satellite-derived intelligence.">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #13131a;
+            --bg-panel: #1e1e2f;
+            --bg-sidebar: #181824;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --accent-purple: #6c5dd3;
+            --accent-orange: #fd7e14;
+            --accent-red: #dc3545;
+            --accent-deep-blue: #0d6efd;
+            --accent-green: #198754;
+            --border-color: #2d2d44;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .brand img { height: 40px; width: auto; }
+
+        .brand-text {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .nav-section { margin-bottom: 25px; }
+
+        .nav-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .nav-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: rgba(108, 93, 211, 0.1);
+            color: var(--accent-purple);
+        }
+
+        .nav-item.active { font-weight: 500; }
+
+        /* Filter styles */
+        .filter-group { position: relative; }
+
+        .filter-dropdown {
+            display: none;
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 100%;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px;
+            z-index: 200;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+
+        .filter-dropdown.open { display: block; }
+
+        .filter-option {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .filter-option:hover, .filter-option.selected {
+            background: rgba(108, 93, 211, 0.15);
+            color: var(--accent-purple);
+        }
+
+        .filter-value {
+            font-size: 12px;
+            color: var(--accent-purple);
+            font-weight: 500;
+        }
+
+        .filter-arrow {
+            transition: transform 0.2s;
+            font-size: 10px;
+        }
+
+        .filter-arrow.open { transform: rotate(180deg); }
+
+        /* Mobile hamburger */
+        .mobile-header {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: var(--bg-sidebar);
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+            padding: 0 16px;
+            z-index: 101;
+            justify-content: space-between;
+        }
+
+        .mobile-header .brand-text { font-size: 15px; font-weight: 700; }
+
+        .hamburger {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .hamburger:hover { background: rgba(108,93,211,0.1); }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .page-title { font-size: 24px; font-weight: 600; }
+        .breadcrumbs { color: var(--text-secondary); font-size: 14px; }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .kpi-card {
+            background-color: var(--bg-panel);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-card h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 400;
+            margin-bottom: 10px;
+        }
+
+        .kpi-value { font-size: 28px; font-weight: 700; margin-bottom: 5px; }
+
+        .kpi-trend { font-size: 12px; display: flex; align-items: center; gap: 5px; }
+        .trend-up { color: var(--accent-green); }
+        .trend-down { color: var(--accent-red); }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            min-height: 400px;
+        }
+
+        .full-width { grid-column: span 2; }
+
+        .chart-card {
+            background-color: var(--bg-panel);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .chart-title { font-size: 16px; font-weight: 600; }
+
+        .chart-actions button {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .chart-container { flex: 1; position: relative; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; flex-direction: column; gap: 25px; }
+
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+        .data-table th, .data-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .data-table td { color: var(--text-primary); }
+        .data-table tbody tr:hover { background-color: rgba(108, 93, 211, 0.05); }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .badge-green { background: rgba(25,135,84,0.15); color: var(--accent-green); }
+        .badge-red { background: rgba(220,53,69,0.15); color: var(--accent-red); }
+        .badge-orange { background: rgba(253,126,20,0.15); color: var(--accent-orange); }
+        .badge-blue { background: rgba(13,110,253,0.15); color: var(--accent-deep-blue); }
+
+        .progress-bar-bg {
+            height: 4px;
+            width: 100%;
+            background: #2d2d44;
+            margin-top: 15px;
+            border-radius: 2px;
+        }
+
+        .progress-bar-fill { height: 100%; border-radius: 2px; }
+
+        .export-btn {
+            background: var(--accent-purple);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        /* Active filter indicator */
+        .filter-active-badge {
+            display: none;
+            background: var(--accent-purple);
+            color: white;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        .filter-active-badge.visible { display: inline-block; }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .chart-grid { grid-template-columns: 1fr; min-height: 300px; }
+            .full-width { grid-column: span 1; }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-header { display: flex; }
+            .sidebar-overlay.open { display: block; }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open { transform: translateX(0); }
+
+            .main-content {
+                padding: 72px 16px 20px;
+            }
+
+            .kpi-grid { grid-template-columns: 1fr; }
+
+            .page-title { font-size: 20px; }
+            .kpi-value { font-size: 24px; }
+            .chart-title { font-size: 14px; }
+
+            .header { flex-direction: column; align-items: flex-start; }
+
+            .data-table th, .data-table td { padding: 8px 10px; font-size: 12px; }
+        }
+
+        @media (max-width: 480px) {
+            .main-content { padding: 64px 10px 16px; gap: 16px; }
+            .kpi-card { padding: 14px; }
+            .chart-card { padding: 14px; }
+            .chart-grid { min-height: 250px; }
+            .export-btn { padding: 8px 14px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Mobile header -->
+    <div class="mobile-header">
+        <span class="brand-text">Atlas Analytics Inc.</span>
+        <button class="hamburger" id="menuToggle" aria-label="Toggle navigation menu">&#9776;</button>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <div class="sidebar" id="sidebar">
+        <div class="brand">
+            <img src="https://atlasanalytics.com/wp-content/uploads/2025/01/Group-30.png" alt="Atlas Analytics Logo">
+            <span class="brand-text">Atlas Analytics Inc.</span>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Data Series</div>
+            <div class="nav-item active" data-tab="quarterly">Quarterly Time Series</div>
+            <div class="nav-item" data-tab="weekly">Weekly Time Series</div>
+            <div class="nav-item" data-tab="financial">Financial Targets</div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Components</div>
+            <div class="nav-item" data-tab="exports">Net Exports</div>
+            <div class="nav-item" data-tab="inventories">Private Inventories</div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Filters</div>
+            <div class="filter-group">
+                <div class="nav-item" id="dateRangeToggle">
+                    <span>Date Range</span>
+                    <span class="filter-arrow" id="dateRangeArrow">&#9660;</span>
+                </div>
+                <div class="filter-dropdown" id="dateRangeDropdown">
+                    <div class="filter-option" data-range="6m">Last 6 Months</div>
+                    <div class="filter-option selected" data-range="1y">Last 1 Year</div>
+                    <div class="filter-option" data-range="2y">Last 2 Years</div>
+                    <div class="filter-option" data-range="all">All Time</div>
+                </div>
+            </div>
+            <div class="filter-group">
+                <div class="nav-item" id="quarterToggle">
+                    <span>Quarter</span>
+                    <span class="filter-value" id="quarterValue">Q4 2025</span>
+                </div>
+                <div class="filter-dropdown" id="quarterDropdown">
+                    <div class="filter-option" data-quarter="Q1 2025">Q1 2025</div>
+                    <div class="filter-option" data-quarter="Q2 2025">Q2 2025</div>
+                    <div class="filter-option" data-quarter="Q3 2025">Q3 2025</div>
+                    <div class="filter-option selected" data-quarter="Q4 2025">Q4 2025</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+
+        <!-- TAB 1: Quarterly Time Series -->
+        <div class="tab-content active" id="tab-quarterly">
+            <div class="header">
+                <div>
+                    <div class="breadcrumbs">Dashboard &gt; Economic Overview</div>
+                    <h1 class="page-title">Q4 2025 Predictions<span class="filter-active-badge" id="quarterlyFilterBadge">Filtered</span></h1>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="export-btn">Export Report</button>
+                </div>
+            </div>
+
+            <div class="kpi-grid" id="quarterlyKpis">
+                <div class="kpi-card">
+                    <h3>Total GDP Forecast</h3>
+                    <div class="kpi-value" style="color: var(--accent-green);" id="kpi-gdp">5.2%</div>
+                    <div class="kpi-trend trend-up" id="kpi-gdp-trend">&#9650; 0.4% vs prev week</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="kpi-gdp-bar" style="width:75%; background:var(--accent-green);"></div></div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Core GDP</h3>
+                    <div class="kpi-value" style="color: var(--accent-orange);" id="kpi-core">2.6%</div>
+                    <div class="kpi-trend" id="kpi-core-trend">Driving Growth</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="kpi-core-bar" style="width:85%; background:var(--accent-orange);"></div></div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Net Exports</h3>
+                    <div class="kpi-value" style="color: var(--accent-red);" id="kpi-exports">2.1%</div>
+                    <div class="kpi-trend trend-down" id="kpi-exports-trend">&#9660; Drag on GDP</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="kpi-exports-bar" style="width:20%; background:var(--accent-red);"></div></div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card full-width">
+                    <div class="chart-header">
+                        <div class="chart-title">GDP Contribution Analysis (<span id="quarterlyChartLabel">Q4 2025</span>)</div>
+                        <div class="chart-actions"><button>View Details</button></div>
+                    </div>
+                    <div class="chart-container"><canvas id="waterfallChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card full-width">
+                    <div class="chart-header">
+                        <div class="chart-title">GDP Components Over Time</div>
+                        <div class="chart-actions">
+                            <button>Weekly</button>
+                            <button>Monthly</button>
+                        </div>
+                    </div>
+                    <div class="chart-container"><canvas id="trendChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Weekly Time Series -->
+        <div class="tab-content" id="tab-weekly">
+            <div class="header">
+                <div>
+                    <div class="breadcrumbs">Dashboard &gt; Weekly Time Series</div>
+                    <h1 class="page-title">Weekly Economic Indicators</h1>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="export-btn">Export Data</button>
+                </div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h3>Weekly GDP Nowcast</h3>
+                    <div class="kpi-value" style="color: var(--accent-green);">4.8%</div>
+                    <div class="kpi-trend trend-up">&#9650; 0.2% vs last week</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:70%; background:var(--accent-green);"></div></div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Consumer Spending Index</h3>
+                    <div class="kpi-value" style="color: var(--accent-purple);">112.4</div>
+                    <div class="kpi-trend trend-up">&#9650; 1.3 pts</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:82%; background:var(--accent-purple);"></div></div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Jobless Claims (K)</h3>
+                    <div class="kpi-value" style="color: var(--accent-orange);">218</div>
+                    <div class="kpi-trend trend-down">&#9660; 5K from prior</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:35%; background:var(--accent-orange);"></div></div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card full-width">
+                    <div class="chart-header">
+                        <div class="chart-title">Weekly GDP Nowcast Trend</div>
+                        <div class="chart-actions">
+                            <button>4 Weeks</button>
+                            <button>12 Weeks</button>
+                        </div>
+                    </div>
+                    <div class="chart-container"><canvas id="weeklyTrendChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">Consumer Confidence</div>
+                    </div>
+                    <div class="chart-container"><canvas id="consumerChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">Initial Jobless Claims</div>
+                    </div>
+                    <div class="chart-container"><canvas id="joblessChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Financial Targets -->
+        <div class="tab-content" id="tab-financial">
+            <div class="header">
+                <div>
+                    <div class="breadcrumbs">Dashboard &gt; Financial Targets</div>
+                    <h1 class="page-title">FY2025 Financial Targets</h1>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="export-btn">Download PDF</button>
+                </div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h3>Revenue Target</h3>
+                    <div class="kpi-value" style="color: var(--accent-green);">$4.2B</div>
+                    <div class="kpi-trend trend-up">&#9650; 78% achieved</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:78%; background:var(--accent-green);"></div></div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Operating Margin</h3>
+                    <div class="kpi-value" style="color: var(--accent-purple);">18.3%</div>
+                    <div class="kpi-trend trend-up">&#9650; Target: 20%</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:91%; background:var(--accent-purple);"></div></div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Debt-to-Equity</h3>
+                    <div class="kpi-value" style="color: var(--accent-orange);">0.42</div>
+                    <div class="kpi-trend trend-up">&#9650; Below 0.5 target</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:84%; background:var(--accent-orange);"></div></div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">Revenue vs Target (Quarterly)</div>
+                    </div>
+                    <div class="chart-container"><canvas id="revenueTargetChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">Margin Breakdown</div>
+                    </div>
+                    <div class="chart-container"><canvas id="marginChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card full-width">
+                    <div class="chart-header">
+                        <div class="chart-title">Target Tracking Summary</div>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Metric</th><th>Target</th><th>Actual</th><th>Variance</th><th>Status</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Revenue</td><td>$4.2B</td><td>$3.28B</td><td style="color:var(--accent-red);">-$0.92B</td><td><span class="badge badge-orange">In Progress</span></td></tr>
+                                <tr><td>Operating Margin</td><td>20.0%</td><td>18.3%</td><td style="color:var(--accent-red);">-1.7%</td><td><span class="badge badge-orange">In Progress</span></td></tr>
+                                <tr><td>EPS</td><td>$3.50</td><td>$3.62</td><td style="color:var(--accent-green);">+$0.12</td><td><span class="badge badge-green">On Track</span></td></tr>
+                                <tr><td>Free Cash Flow</td><td>$800M</td><td>$720M</td><td style="color:var(--accent-red);">-$80M</td><td><span class="badge badge-orange">In Progress</span></td></tr>
+                                <tr><td>Debt-to-Equity</td><td>&lt; 0.50</td><td>0.42</td><td style="color:var(--accent-green);">+0.08</td><td><span class="badge badge-green">On Track</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Net Exports -->
+        <div class="tab-content" id="tab-exports">
+            <div class="header">
+                <div>
+                    <div class="breadcrumbs">Dashboard &gt; Components &gt; Net Exports</div>
+                    <h1 class="page-title">Net Exports Analysis</h1>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="export-btn">Export Report</button>
+                </div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h3>Net Exports Contribution</h3>
+                    <div class="kpi-value" style="color: var(--accent-red);">2.1%</div>
+                    <div class="kpi-trend trend-down">&#9660; Drag on GDP</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:20%; background:var(--accent-red);"></div></div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Exports Growth</h3>
+                    <div class="kpi-value" style="color: var(--accent-green);">3.8%</div>
+                    <div class="kpi-trend trend-up">&#9650; 0.6% vs Q3</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:55%; background:var(--accent-green);"></div></div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Imports Growth</h3>
+                    <div class="kpi-value" style="color: var(--accent-orange);">5.9%</div>
+                    <div class="kpi-trend trend-up">&#9650; 1.2% vs Q3</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:72%; background:var(--accent-orange);"></div></div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card full-width">
+                    <div class="chart-header">
+                        <div class="chart-title">Exports vs Imports (Quarterly)</div>
+                        <div class="chart-actions"><button>View Details</button></div>
+                    </div>
+                    <div class="chart-container"><canvas id="exportsImportsChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">Trade Balance Trend</div>
+                    </div>
+                    <div class="chart-container"><canvas id="tradeBalanceChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">Top Export Sectors</div>
+                    </div>
+                    <div class="chart-container"><canvas id="exportSectorsChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: Private Inventories -->
+        <div class="tab-content" id="tab-inventories">
+            <div class="header">
+                <div>
+                    <div class="breadcrumbs">Dashboard &gt; Components &gt; Private Inventories</div>
+                    <h1 class="page-title">Private Inventories Breakdown</h1>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="export-btn">Export Report</button>
+                </div>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h3>Inventory Contribution</h3>
+                    <div class="kpi-value" style="color: var(--accent-deep-blue);">0.8%</div>
+                    <div class="kpi-trend trend-up">&#9650; Positive contributor</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:40%; background:var(--accent-deep-blue);"></div></div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Inventory-to-Sales Ratio</h3>
+                    <div class="kpi-value" style="color: var(--accent-purple);">1.27</div>
+                    <div class="kpi-trend">Stable range</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:63%; background:var(--accent-purple);"></div></div>
+                </div>
+                <div class="kpi-card">
+                    <h3>Change in Inventories ($B)</h3>
+                    <div class="kpi-value" style="color: var(--accent-green);">+$71.4</div>
+                    <div class="kpi-trend trend-up">&#9650; $12.3B vs Q3</div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:58%; background:var(--accent-green);"></div></div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card full-width">
+                    <div class="chart-header">
+                        <div class="chart-title">Inventory Levels Over Time ($B)</div>
+                        <div class="chart-actions">
+                            <button>Quarterly</button>
+                            <button>Annual</button>
+                        </div>
+                    </div>
+                    <div class="chart-container"><canvas id="inventoryLevelChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">Inventory by Sector</div>
+                    </div>
+                    <div class="chart-container"><canvas id="inventorySectorChart"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">Inventory-to-Sales Ratio Trend</div>
+                    </div>
+                    <div class="chart-container"><canvas id="inventoryRatioChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        Chart.defaults.color = '#a0a0b0';
+        Chart.defaults.borderColor = '#2d2d44';
+
+        const chartInstances = {};
+        let currentDateRange = '1y';
+        let currentQuarter = 'Q4 2025';
+
+        // ===== MOBILE MENU =====
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        menuToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        });
+
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+        });
+
+        function closeMobileMenu() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+        }
+
+        // ===== TAB SWITCHING =====
+        const navItems = document.querySelectorAll('.nav-item[data-tab]');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navItems.forEach(n => n.classList.remove('active'));
+                tabContents.forEach(t => t.classList.remove('active'));
+                item.classList.add('active');
+                document.getElementById('tab-' + item.dataset.tab).classList.add('active');
+                initChartsForTab(item.dataset.tab);
+                closeMobileMenu();
+            });
+        });
+
+        // ===== FILTER DROPDOWNS =====
+        const dateRangeToggle = document.getElementById('dateRangeToggle');
+        const dateRangeDropdown = document.getElementById('dateRangeDropdown');
+        const dateRangeArrow = document.getElementById('dateRangeArrow');
+        const quarterToggle = document.getElementById('quarterToggle');
+        const quarterDropdown = document.getElementById('quarterDropdown');
+        const quarterValue = document.getElementById('quarterValue');
+
+        function closeAllDropdowns() {
+            dateRangeDropdown.classList.remove('open');
+            quarterDropdown.classList.remove('open');
+            dateRangeArrow.classList.remove('open');
+        }
+
+        dateRangeToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = dateRangeDropdown.classList.contains('open');
+            closeAllDropdowns();
+            if (!isOpen) {
+                dateRangeDropdown.classList.add('open');
+                dateRangeArrow.classList.add('open');
+            }
+        });
+
+        quarterToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = quarterDropdown.classList.contains('open');
+            closeAllDropdowns();
+            if (!isOpen) quarterDropdown.classList.add('open');
+        });
+
+        document.addEventListener('click', closeAllDropdowns);
+
+        // Date Range filter options
+        dateRangeDropdown.querySelectorAll('.filter-option').forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dateRangeDropdown.querySelectorAll('.filter-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                currentDateRange = opt.dataset.range;
+                closeAllDropdowns();
+                applyFilters();
+            });
+        });
+
+        // Quarter filter options
+        quarterDropdown.querySelectorAll('.filter-option').forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                e.stopPropagation();
+                quarterDropdown.querySelectorAll('.filter-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                currentQuarter = opt.dataset.quarter;
+                quarterValue.textContent = currentQuarter;
+                closeAllDropdowns();
+                applyFilters();
+            });
+        });
+
+        // ===== FILTER DATA SETS =====
+        const quarterlyData = {
+            'Q1 2025': { gdp: 3.1, core: 1.8, exports: 1.0, gdpBar: 45, coreBar: 60, exportsBar: 15, coreTrend: 'Moderate', exportsTrend: '&#9660; Slight drag', gdpTrend: '&#9650; 0.2% vs prev week', waterfall: [1.8, 1.0, 0.3, 3.1] },
+            'Q2 2025': { gdp: 3.8, core: 2.1, exports: 1.4, gdpBar: 55, coreBar: 70, exportsBar: 18, coreTrend: 'Steady growth', exportsTrend: '&#9660; Drag on GDP', gdpTrend: '&#9650; 0.3% vs prev week', waterfall: [2.1, 1.4, 0.3, 3.8] },
+            'Q3 2025': { gdp: 4.5, core: 2.4, exports: 1.8, gdpBar: 65, coreBar: 78, exportsBar: 18, coreTrend: 'Accelerating', exportsTrend: '&#9660; Drag on GDP', gdpTrend: '&#9650; 0.5% vs prev week', waterfall: [2.4, 1.8, 0.3, 4.5] },
+            'Q4 2025': { gdp: 5.2, core: 2.6, exports: 2.1, gdpBar: 75, coreBar: 85, exportsBar: 20, coreTrend: 'Driving Growth', exportsTrend: '&#9660; Drag on GDP', gdpTrend: '&#9650; 0.4% vs prev week', waterfall: [2.6, 2.1, 0.8, 5.2] }
+        };
+
+        const dateRangeLabels = {
+            '6m': ['Oct','Nov','Dec','Jan','Feb','Mar'],
+            '1y': ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'],
+            '2y': ['Q1 24','Q2 24','Q3 24','Q4 24','Q1 25','Q2 25','Q3 25','Q4 25'],
+            'all': ['Q1 23','Q2 23','Q3 23','Q4 23','Q1 24','Q2 24','Q3 24','Q4 24','Q1 25','Q2 25','Q3 25','Q4 25']
+        };
+
+        const dateRangeTrendData = {
+            '6m': [5.0, 5.8, 5.0, 4.8, 2.5, 2.74],
+            '1y': [0.5, 0.4, 4.5, 5.0, 5.8, 5.0, 4.8, 2.5, 2.74],
+            '2y': [1.2, 1.8, 2.1, 2.5, 3.1, 3.8, 4.5, 5.2],
+            'all': [0.8, 1.0, 1.1, 1.4, 1.2, 1.8, 2.1, 2.5, 3.1, 3.8, 4.5, 5.2]
+        };
+
+        const dateRangeVolumeData = {
+            '6m': [3,3,3,3,2,2],
+            '1y': [2,2,3,3,3,3,3,2,2],
+            '2y': [1,1,2,2,2,2,3,3],
+            'all': [1,1,1,1,1,1,2,2,2,2,3,3]
+        };
+
+        const tooltipStyle = {
+            backgroundColor: '#1e1e2f', titleColor: '#fff', bodyColor: '#a0a0b0',
+            borderColor: '#2d2d44', borderWidth: 1
+        };
+
+        // ===== APPLY FILTERS =====
+        function applyFilters() {
+            const qd = quarterlyData[currentQuarter];
+            const badge = document.getElementById('quarterlyFilterBadge');
+
+            // Update KPIs
+            document.getElementById('kpi-gdp').textContent = qd.gdp + '%';
+            document.getElementById('kpi-core').textContent = qd.core + '%';
+            document.getElementById('kpi-exports').textContent = qd.exports + '%';
+            document.getElementById('kpi-gdp-trend').innerHTML = qd.gdpTrend;
+            document.getElementById('kpi-core-trend').innerHTML = qd.coreTrend;
+            document.getElementById('kpi-exports-trend').innerHTML = qd.exportsTrend;
+            document.getElementById('kpi-gdp-bar').style.width = qd.gdpBar + '%';
+            document.getElementById('kpi-core-bar').style.width = qd.coreBar + '%';
+            document.getElementById('kpi-exports-bar').style.width = qd.exportsBar + '%';
+            document.getElementById('quarterlyChartLabel').textContent = currentQuarter;
+
+            // Show filter badge if not default
+            if (currentQuarter !== 'Q4 2025' || currentDateRange !== '1y') {
+                badge.classList.add('visible');
+            } else {
+                badge.classList.remove('visible');
+            }
+
+            // Find active tab and re-init its charts
+            const activeTab = document.querySelector('.nav-item[data-tab].active');
+            if (activeTab) initChartsForTab(activeTab.dataset.tab);
+        }
+
+        // ===== CHART INIT =====
+        function initChartsForTab(tab) {
+            Object.keys(chartInstances).forEach(key => {
+                if (key.startsWith(tab + '_')) {
+                    chartInstances[key].destroy();
+                    delete chartInstances[key];
+                }
+            });
+
+            if (tab === 'quarterly') initQuarterlyCharts();
+            else if (tab === 'weekly') initWeeklyCharts();
+            else if (tab === 'financial') initFinancialCharts();
+            else if (tab === 'exports') initExportsCharts();
+            else if (tab === 'inventories') initInventoriesCharts();
+        }
+
+        // =====================
+        // TAB 1: QUARTERLY
+        // =====================
+        function initQuarterlyCharts() {
+            const qd = quarterlyData[currentQuarter];
+            const labels = dateRangeLabels[currentDateRange];
+            const trendData = dateRangeTrendData[currentDateRange];
+            const volumeData = dateRangeVolumeData[currentDateRange];
+
+            chartInstances['quarterly_waterfall'] = new Chart(document.getElementById('waterfallChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Core GDP', 'Net Exports', 'Private Inventories', 'Total GDP'],
+                    datasets: [{
+                        label: 'Contribution %',
+                        data: qd.waterfall,
+                        backgroundColor: ['#fd7e14', '#dc3545', '#0d6efd', '#198754'],
+                        borderRadius: 4, barThickness: 60
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: tooltipStyle },
+                    scales: {
+                        y: { grid: { color: '#2d2d44', borderDash: [5,5] }, beginAtZero: true },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            chartInstances['quarterly_trend'] = new Chart(document.getElementById('trendChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            type: 'line', label: 'GDP Growth (%)',
+                            data: trendData,
+                            borderColor: '#198754', borderWidth: 3, tension: 0.4,
+                            pointBackgroundColor: '#1e1e2f', pointBorderColor: '#198754',
+                            pointBorderWidth: 2, pointRadius: 4, yAxisID: 'y'
+                        },
+                        {
+                            type: 'bar', label: 'Volume',
+                            data: volumeData,
+                            backgroundColor: 'rgba(25,135,84,0.1)', barThickness: 20, yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } } },
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left', grid: { color: '#2d2d44' } },
+                        y1: { type: 'linear', display: false, position: 'right', grid: { display: false } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // =====================
+        // TAB 2: WEEKLY
+        // =====================
+        function initWeeklyCharts() {
+            let weeks, nowcastData, consumerData, joblessData;
+            if (currentDateRange === '6m' || currentDateRange === '1y') {
+                weeks = ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
+                nowcastData = [3.2, 3.5, 3.8, 4.0, 3.9, 4.2, 4.5, 4.3, 4.6, 4.7, 4.9, 4.8];
+                consumerData = [105, 107, 108, 106, 109, 110, 108, 111, 112, 110, 113, 112.4];
+                joblessData = [230, 228, 225, 222, 220, 224, 219, 221, 217, 220, 216, 218];
+            } else {
+                weeks = ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12','W13','W14','W15','W16','W17','W18','W19','W20','W21','W22','W23','W24'];
+                nowcastData = [2.0, 2.2, 2.4, 2.5, 2.7, 2.8, 3.0, 3.1, 3.2, 3.5, 3.8, 4.0, 3.9, 4.2, 4.5, 4.3, 4.6, 4.7, 4.9, 4.8, 5.0, 5.1, 4.9, 4.8];
+                consumerData = [98, 99, 100, 101, 102, 103, 104, 105, 105, 107, 108, 106, 109, 110, 108, 111, 112, 110, 113, 112, 114, 113, 112, 112.4];
+                joblessData = [245, 242, 240, 238, 236, 234, 232, 230, 230, 228, 225, 222, 220, 224, 219, 221, 217, 220, 216, 218, 215, 217, 216, 218];
+            }
+
+            chartInstances['weekly_trend'] = new Chart(document.getElementById('weeklyTrendChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: weeks,
+                    datasets: [{
+                        label: 'GDP Nowcast (%)', data: nowcastData,
+                        borderColor: '#198754', borderWidth: 3, tension: 0.3,
+                        pointBackgroundColor: '#1e1e2f', pointBorderColor: '#198754',
+                        pointBorderWidth: 2, pointRadius: 4, fill: true,
+                        backgroundColor: 'rgba(25,135,84,0.08)'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: tooltipStyle },
+                    scales: { y: { grid: { color: '#2d2d44' }, beginAtZero: false }, x: { grid: { display: false } } }
+                }
+            });
+
+            chartInstances['weekly_consumer'] = new Chart(document.getElementById('consumerChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: weeks,
+                    datasets: [{
+                        label: 'Consumer Confidence', data: consumerData,
+                        backgroundColor: 'rgba(108,93,211,0.6)', borderRadius: 3, barThickness: 14
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: tooltipStyle },
+                    scales: { y: { grid: { color: '#2d2d44' }, beginAtZero: false, min: 95 }, x: { grid: { display: false } } }
+                }
+            });
+
+            chartInstances['weekly_jobless'] = new Chart(document.getElementById('joblessChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: weeks,
+                    datasets: [{
+                        label: 'Initial Claims (K)', data: joblessData,
+                        borderColor: '#fd7e14', borderWidth: 2, tension: 0.3,
+                        pointBackgroundColor: '#1e1e2f', pointBorderColor: '#fd7e14',
+                        pointBorderWidth: 2, pointRadius: 3, fill: true,
+                        backgroundColor: 'rgba(253,126,20,0.08)'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: tooltipStyle },
+                    scales: { y: { grid: { color: '#2d2d44' }, beginAtZero: false }, x: { grid: { display: false } } }
+                }
+            });
+        }
+
+        // =====================
+        // TAB 3: FINANCIAL TARGETS
+        // =====================
+        function initFinancialCharts() {
+            let quarters, targetData, actualData;
+            if (currentDateRange === '6m') {
+                quarters = ['Q3 2025', 'Q4 2025'];
+                targetData = [1.05, 1.05]; actualData = [1.08, 0.27];
+            } else if (currentDateRange === '2y' || currentDateRange === 'all') {
+                quarters = ['Q1 2024','Q2 2024','Q3 2024','Q4 2024','Q1 2025','Q2 2025','Q3 2025','Q4 2025'];
+                targetData = [0.90,0.90,0.90,0.90,1.05,1.05,1.05,1.05]; actualData = [0.85,0.88,0.92,0.95,0.92,1.01,1.08,0.27];
+            } else {
+                quarters = ['Q1 2025', 'Q2 2025', 'Q3 2025', 'Q4 2025'];
+                targetData = [1.05, 1.05, 1.05, 1.05]; actualData = [0.92, 1.01, 1.08, 0.27];
+            }
+
+            chartInstances['financial_revenue'] = new Chart(document.getElementById('revenueTargetChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: quarters,
+                    datasets: [
+                        { label: 'Target ($B)', data: targetData, backgroundColor: 'rgba(108,93,211,0.3)', borderRadius: 3, barThickness: 28 },
+                        { label: 'Actual ($B)', data: actualData, backgroundColor: 'rgba(25,135,84,0.7)', borderRadius: 3, barThickness: 28 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: tooltipStyle },
+                    scales: { y: { grid: { color: '#2d2d44' }, beginAtZero: true }, x: { grid: { display: false } } }
+                }
+            });
+
+            chartInstances['financial_margin'] = new Chart(document.getElementById('marginChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Gross Margin', 'Operating Expenses', 'Net Margin'],
+                    datasets: [{ data: [42, 23.7, 18.3], backgroundColor: ['#198754', '#fd7e14', '#6c5dd3'], borderWidth: 0, hoverOffset: 8 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '65%',
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 16 } }, tooltip: tooltipStyle }
+                }
+            });
+        }
+
+        // =====================
+        // TAB 4: NET EXPORTS
+        // =====================
+        function initExportsCharts() {
+            let quarters, exportsData, importsData, balanceData;
+            if (currentDateRange === '6m') {
+                quarters = ['Q3 25','Q4 25'];
+                exportsData = [3.2, 3.8]; importsData = [4.7, 5.9]; balanceData = [-76, -80];
+            } else if (currentDateRange === '2y' || currentDateRange === 'all') {
+                quarters = ['Q1 24','Q2 24','Q3 24','Q4 24','Q1 25','Q2 25','Q3 25','Q4 25'];
+                exportsData = [2.1,2.5,2.8,3.0,3.2,3.4,3.2,3.8]; importsData = [3.5,3.8,4.2,4.5,4.8,5.1,4.7,5.9]; balanceData = [-68,-72,-75,-78,-74,-71,-76,-80];
+            } else {
+                quarters = ['Q1 25','Q2 25','Q3 25','Q4 25'];
+                exportsData = [3.2,3.4,3.2,3.8]; importsData = [4.8,5.1,4.7,5.9]; balanceData = [-74,-71,-76,-80];
+            }
+
+            chartInstances['exports_main'] = new Chart(document.getElementById('exportsImportsChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: quarters,
+                    datasets: [
+                        { label: 'Exports Growth %', data: exportsData, backgroundColor: 'rgba(25,135,84,0.7)', borderRadius: 3, barThickness: 20 },
+                        { label: 'Imports Growth %', data: importsData, backgroundColor: 'rgba(253,126,20,0.7)', borderRadius: 3, barThickness: 20 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: tooltipStyle },
+                    scales: { y: { grid: { color: '#2d2d44' }, beginAtZero: true }, x: { grid: { display: false } } }
+                }
+            });
+
+            chartInstances['exports_balance'] = new Chart(document.getElementById('tradeBalanceChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: quarters,
+                    datasets: [{
+                        label: 'Trade Balance ($B)', data: balanceData,
+                        borderColor: '#dc3545', borderWidth: 2, tension: 0.3,
+                        pointBackgroundColor: '#1e1e2f', pointBorderColor: '#dc3545',
+                        pointBorderWidth: 2, pointRadius: 4, fill: true,
+                        backgroundColor: 'rgba(220,53,69,0.08)'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: tooltipStyle },
+                    scales: { y: { grid: { color: '#2d2d44' } }, x: { grid: { display: false } } }
+                }
+            });
+
+            chartInstances['exports_sectors'] = new Chart(document.getElementById('exportSectorsChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Technology', 'Agriculture', 'Manufacturing', 'Energy', 'Services'],
+                    datasets: [{ data: [32, 18, 24, 14, 12], backgroundColor: ['#6c5dd3', '#198754', '#0d6efd', '#fd7e14', '#dc3545'], borderWidth: 0, hoverOffset: 8 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '60%',
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 12 } }, tooltip: tooltipStyle }
+                }
+            });
+        }
+
+        // =====================
+        // TAB 5: PRIVATE INVENTORIES
+        // =====================
+        function initInventoriesCharts() {
+            let quarters, levelData, ratioData;
+            if (currentDateRange === '6m') {
+                quarters = ['Q3 25','Q4 25'];
+                levelData = [59.1, 71.4]; ratioData = [1.27, 1.27];
+            } else if (currentDateRange === '2y' || currentDateRange === 'all') {
+                quarters = ['Q1 24','Q2 24','Q3 24','Q4 24','Q1 25','Q2 25','Q3 25','Q4 25'];
+                levelData = [38.2,42.5,48.1,55.3,52.7,58.9,59.1,71.4]; ratioData = [1.31,1.30,1.29,1.28,1.29,1.28,1.27,1.27];
+            } else {
+                quarters = ['Q1 25','Q2 25','Q3 25','Q4 25'];
+                levelData = [52.7,58.9,59.1,71.4]; ratioData = [1.29,1.28,1.27,1.27];
+            }
+
+            const lastIdx = levelData.length - 1;
+            chartInstances['inventories_level'] = new Chart(document.getElementById('inventoryLevelChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: quarters,
+                    datasets: [{
+                        label: 'Change in Inventories ($B)', data: levelData,
+                        backgroundColor: levelData.map((_, i) => i === lastIdx ? 'rgba(13,110,253,0.8)' : 'rgba(13,110,253,0.4)'),
+                        borderRadius: 4, barThickness: 32
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: tooltipStyle },
+                    scales: { y: { grid: { color: '#2d2d44' }, beginAtZero: true }, x: { grid: { display: false } } }
+                }
+            });
+
+            chartInstances['inventories_sector'] = new Chart(document.getElementById('inventorySectorChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Retail', 'Wholesale', 'Manufacturing', 'Other'],
+                    datasets: [{ data: [28, 35, 25, 12], backgroundColor: ['#6c5dd3', '#0d6efd', '#fd7e14', '#198754'], borderWidth: 0, hoverOffset: 8 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '60%',
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 12 } }, tooltip: tooltipStyle }
+                }
+            });
+
+            chartInstances['inventories_ratio'] = new Chart(document.getElementById('inventoryRatioChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: quarters,
+                    datasets: [{
+                        label: 'Inventory-to-Sales Ratio', data: ratioData,
+                        borderColor: '#6c5dd3', borderWidth: 2, tension: 0.3,
+                        pointBackgroundColor: '#1e1e2f', pointBorderColor: '#6c5dd3',
+                        pointBorderWidth: 2, pointRadius: 4, fill: true,
+                        backgroundColor: 'rgba(108,93,211,0.08)'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: tooltipStyle },
+                    scales: { y: { grid: { color: '#2d2d44' }, beginAtZero: false }, x: { grid: { display: false } } }
+                }
+            });
+        }
+
+        // Initialize default tab
+        initQuarterlyCharts();
+    </script>
+</body>
+</html>

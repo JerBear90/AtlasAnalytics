@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas Analytics | Insights - Satellite Economic Intelligence Research & Analysis</title>
+<meta name="description" content="Expert analysis on satellite-derived economic intelligence, GDP forecasting methodology, and macroeconomic trends from the Atlas Analytics research team.">
+<link href="https://fonts.googleapis.com/css2?family=Encode+Sans+Condensed:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0b1a;--panel:rgba(15,15,35,0.92);--nav-bg:#141428;--text:#fff;--dim:#b0b0c8;--coral:#e8546a;--coral-h:#d4435a;--border:rgba(255,255,255,0.1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Encode Sans Condensed',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:0;background:linear-gradient(180deg,rgba(11,11,26,.3),rgba(11,11,26,.6) 40%,rgba(11,11,26,.85)),url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80') center/cover no-repeat}
+.wrap{position:relative;z-index:1}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:transparent;border-bottom:1px solid transparent;transition:background .3s,border-color .3s}
+nav.scrolled{background:var(--nav-bg);border-bottom-color:var(--border)}
+.logo{display:flex;flex-direction:column;align-items:flex-start;text-decoration:none;color:var(--text);gap:4px}
+.logo img{height:120px;width:auto}
+.ham{background:var(--coral);border:none;color:#fff;width:44px;height:44px;border-radius:8px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.ham:hover{background:var(--coral-h)}
+.mnav{display:none;position:fixed;inset:0;z-index:99;background:var(--panel);flex-direction:column;align-items:center;justify-content:center;gap:24px}
+.mnav.open{display:flex}
+.mnav a{color:var(--text);text-decoration:none;font-size:20px;font-weight:500;padding:12px 24px;border-radius:8px}
+.mnav a:hover{background:rgba(232,84,106,.15)}
+.mnav-x{position:absolute;top:20px;right:40px;background:none;border:none;color:var(--text);font-size:28px;cursor:pointer}
+.hero{padding:160px 40px 60px;text-align:center;max-width:800px;margin:0 auto}
+.hero h1{font-size:48px;font-weight:700;margin-bottom:16px;line-height:1.15}
+.hero p{font-size:18px;color:var(--dim);line-height:1.7;max-width:600px;margin:0 auto}
+.sec{padding:40px 40px 60px;max-width:1200px;margin:0 auto}
+.sec-label{font-size:14px;text-transform:uppercase;letter-spacing:2px;color:var(--coral);font-weight:600;margin-bottom:12px}
+.btn{display:inline-block;background:var(--coral);color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;transition:background .2s;border:none;cursor:pointer}
+.btn:hover{background:var(--coral-h)}
+.btn-o{display:inline-block;background:transparent;color:var(--coral);text-decoration:none;padding:13px 35px;border-radius:8px;font-size:16px;font-weight:600;border:1px solid var(--coral);transition:all .2s;cursor:pointer}
+.btn-o:hover{background:rgba(232,84,106,.1)}
+
+/* Filter tabs */
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:40px;justify-content:center}
+.filter-tab{padding:8px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;border:1px solid var(--border);color:var(--dim);background:transparent;transition:all .2s;font-family:inherit}
+.filter-tab:hover,.filter-tab.active{background:rgba(232,84,106,.15);color:var(--coral);border-color:var(--coral)}
+
+/* Featured post */
+.featured{display:grid;grid-template-columns:1fr 1fr;gap:32px;background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:48px;transition:border-color .3s}
+.featured:hover{border-color:rgba(232,84,106,.3)}
+.featured-img{width:100%;height:100%;min-height:320px;object-fit:cover;display:block}
+.featured-body{padding:40px;display:flex;flex-direction:column;justify-content:center}
+.featured-cat{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:var(--coral);font-weight:600;margin-bottom:12px}
+.featured-title{font-size:26px;font-weight:700;margin-bottom:12px;line-height:1.3}
+.featured-title a{color:var(--text);text-decoration:none;transition:color .2s}
+.featured-title a:hover{color:var(--coral)}
+.featured-excerpt{font-size:16px;color:var(--dim);line-height:1.7;margin-bottom:20px}
+.featured-meta{font-size:14px;color:var(--dim);display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.featured-meta img{width:32px;height:32px;border-radius:50%;object-fit:cover}
+
+/* Post grid */
+.posts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.post-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:transform .3s,border-color .3s;display:flex;flex-direction:column}
+.post-card:hover{transform:translateY(-4px);border-color:rgba(232,84,106,.3)}
+.post-card-img{width:100%;height:200px;object-fit:cover;display:block}
+.post-card-body{padding:24px;display:flex;flex-direction:column;flex:1}
+.post-card-cat{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--coral);font-weight:600;margin-bottom:8px}
+.post-card-title{font-size:18px;font-weight:700;margin-bottom:8px;line-height:1.3}
+.post-card-title a{color:var(--text);text-decoration:none;transition:color .2s}
+.post-card-title a:hover{color:var(--coral)}
+.post-card-excerpt{font-size:15px;color:var(--dim);line-height:1.6;margin-bottom:16px;flex:1}
+.post-card-meta{font-size:13px;color:var(--dim);display:flex;gap:12px;align-items:center;margin-top:auto}
+.post-card-meta img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+
+/* Podcast embed placeholder */
+.podcast-card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:32px;display:flex;gap:24px;align-items:center;transition:border-color .3s}
+.podcast-card:hover{border-color:rgba(232,84,106,.3)}
+.podcast-icon{font-size:48px;flex-shrink:0}
+.podcast-body{flex:1}
+.podcast-body h3{font-size:18px;font-weight:700;margin-bottom:6px}
+.podcast-body p{font-size:15px;color:var(--dim);line-height:1.6;margin-bottom:12px}
+.podcast-bar{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.podcast-bar-fill{height:100%;width:35%;background:var(--coral);border-radius:3px}
+
+/* Newsletter */
+.newsletter{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:48px;text-align:center;margin-top:48px}
+.newsletter h2{font-size:24px;font-weight:700;margin-bottom:8px}
+.newsletter p{font-size:16px;color:var(--dim);margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6}
+.newsletter form{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;max-width:460px;margin:0 auto}
+.newsletter input{flex:1;min-width:200px;padding:14px 20px;border-radius:8px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);font-size:16px;font-family:inherit;outline:none}
+.newsletter input:focus{border-color:var(--coral)}
+
+/* Footer */
+footer{margin-top:80px;text-align:center;padding:60px 40px 0;position:relative}
+footer::before{content:'';display:block;width:60%;max-width:600px;height:1px;background:var(--border);margin:0 auto 48px}
+.ft-logo{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:20px}
+.ft-logo img{height:120px;width:auto}
+.ft-brand{font-size:16px;text-transform:uppercase;letter-spacing:3px;color:var(--dim)}
+.ft-loc{font-size:16px;color:var(--dim);margin-bottom:40px}
+.ft-bot{display:flex;justify-content:space-between;align-items:center;padding:24px 0;border-top:1px solid var(--border);max-width:1200px;margin:0 auto}
+.ft-copy{font-size:16px;color:var(--dim)}
+.ft-soc{display:flex;gap:24px}
+.ft-soc a{color:var(--dim);text-decoration:none;transition:color .2s;font-size:24px}
+.ft-soc a:hover{color:var(--text)}
+
+/* Responsive */
+@media(max-width:1024px){
+.posts-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:768px){
+nav{padding:14px 20px}
+.logo img{height:55px}
+.hero{padding:130px 20px 40px}
+.hero h1{font-size:32px}
+.hero p{font-size:16px}
+.sec{padding:32px 16px 48px}
+.featured{grid-template-columns:1fr}
+.featured-img{min-height:220px}
+.featured-body{padding:28px}
+.featured-title{font-size:22px}
+.posts-grid{grid-template-columns:1fr}
+.podcast-card{flex-direction:column;text-align:center}
+.newsletter{padding:32px 20px}
+.newsletter h2{font-size:20px}
+.newsletter form{flex-direction:column;align-items:stretch}
+.newsletter input{min-width:auto}
+.filter-bar{justify-content:flex-start}
+footer{padding:40px 16px 0;margin-top:60px}
+.ft-logo img{height:80px}
+.ft-bot{flex-direction:column;gap:16px;text-align:center}
+.ft-soc{justify-content:center}
+}
+@media(max-width:480px){
+.hero{padding:120px 14px 36px}
+.hero h1{font-size:26px}
+.sec{padding:24px 12px 40px}
+.featured-body{padding:20px}
+.featured-title{font-size:19px}
+.post-card-body{padding:18px}
+.post-card-img{height:160px}
+.podcast-card{padding:24px}
+.newsletter{padding:28px 16px}
+.btn{padding:12px 28px;width:100%;text-align:center}
+.btn-o{padding:12px 28px;width:100%;text-align:center}
+footer{padding:32px 12px 0}
+.ft-bot{padding:20px 0}
+.ft-logo img{height:60px}
+.filter-tab{padding:6px 16px;font-size:14px}
+}
+</style>
+</head>
+<body>
+<div class="bg" role="presentation"></div>
+<div class="wrap">
+
+<nav>
+<a href="index.html" class="logo"><img src="https://atlasanalytics.com/wp-content/uploads/2025/01/Group-30.png" alt="Atlas Analytics Logo"></a>
+<button class="ham" id="mt" aria-label="Open menu">&#9776;</button>
+</nav>
+<div class="mnav" id="mn">
+<button class="mnav-x" id="mc" aria-label="Close menu">&times;</button>
+<a href="index.html">Home</a><a href="teams.html">Team</a><a href="testimonials.html">Testimonials</a><a href="blog.html">Insights</a><a href="dashboard.html">Dashboard</a><a href="careers.html">Careers</a><a href="index.html#demo" class="btn">Request a Demo</a>
+</div>
+
+<section class="hero">
+<h1>Atlas Insights</h1>
+<p>Research, analysis, and thought leadership from the team building the global standard for satellite-derived economic intelligence.</p>
+</section>
+
+<section class="sec">
+
+<!-- Filter tabs -->
+<div class="filter-bar">
+<button class="filter-tab active" data-filter="all">All</button>
+<button class="filter-tab" data-filter="research">Research</button>
+<button class="filter-tab" data-filter="methodology">Methodology</button>
+<button class="filter-tab" data-filter="market">Market Commentary</button>
+<button class="filter-tab" data-filter="podcast">Podcast</button>
+<button class="filter-tab" data-filter="substack">From Substack</button>
+</div>
+
+<!-- Featured post -->
+<article class="featured" data-category="research">
+<img class="featured-img" src="https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?w=800&q=80" alt="Satellite view of global shipping lanes">
+<div class="featured-body">
+<div class="featured-cat">Research</div>
+<h2 class="featured-title"><a href="blog-post.html">Nighttime Luminosity as a Leading Indicator for Port Activity: A 38-Country Analysis</a></h2>
+<p class="featured-excerpt">Our latest peer-reviewed study demonstrates how nighttime light intensity around major port facilities correlates with trade volume shifts 4-6 weeks before official customs data is released. We analyze 38 countries across three years of satellite imagery.</p>
+<div class="featured-meta">
+<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=80&h=80&fit=crop&crop=face" alt="Dr. Elena Vasquez">
+<span>Dr. Elena Vasquez</span>
+<span>&#183;</span>
+<span>March 10, 2026</span>
+<span>&#183;</span>
+<span>12 min read</span>
+</div>
+</div>
+</article>
+
+<!-- Post grid -->
+<div class="posts-grid">
+
+<article class="post-card" data-category="methodology">
+<img class="post-card-img" src="https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?w=600&q=80" alt="Data visualization on screen">
+<div class="post-card-body">
+<div class="post-card-cat">Methodology</div>
+<h3 class="post-card-title"><a href="#">How We Validate Satellite Signals Against BEA Advance Estimates</a></h3>
+<p class="post-card-excerpt">A transparent look at our backtesting framework and how we measure forecast accuracy across quarterly GDP cycles.</p>
+<div class="post-card-meta">
+<img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=80&h=80&fit=crop&crop=face" alt="James Whitfield">
+<span>James Whitfield</span>
+<span>&#183;</span>
+<span>Mar 3, 2026</span>
+</div>
+</div>
+</article>
+
+<article class="post-card" data-category="market">
+<img class="post-card-img" src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&q=80" alt="Financial market charts">
+<div class="post-card-body">
+<div class="post-card-cat">Market Commentary</div>
+<h3 class="post-card-title"><a href="#">Q1 2026 GDP Nowcast: What Satellite Data Is Telling Us About Consumer Spending</a></h3>
+<p class="post-card-excerpt">Early signals from parking lot occupancy and retail construction activity suggest a stronger-than-expected consumer quarter.</p>
+<div class="post-card-meta">
+<img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=80&h=80&fit=crop&crop=face" alt="Dr. Amara Osei">
+<span>Dr. Amara Osei</span>
+<span>&#183;</span>
+<span>Feb 24, 2026</span>
+</div>
+</div>
+</article>
+
+<article class="post-card" data-category="research">
+<img class="post-card-img" src="https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=600&q=80" alt="Satellite orbiting Earth">
+<div class="post-card-body">
+<div class="post-card-cat">Research</div>
+<h3 class="post-card-title"><a href="#">Agricultural Output Estimation via Multi-Spectral Imagery: Sub-Saharan Africa Case Study</a></h3>
+<p class="post-card-excerpt">Published in Nature — our collaborative study with Harvard achieves 92% correlation with ground-truth economic surveys.</p>
+<div class="post-card-meta">
+<img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=80&h=80&fit=crop&crop=face" alt="Dr. Elena Vasquez">
+<span>Dr. Elena Vasquez</span>
+<span>&#183;</span>
+<span>Feb 12, 2026</span>
+</div>
+</div>
+</article>
+
+<article class="post-card" data-category="substack">
+<img class="post-card-img" src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&q=80" alt="Economic data analysis">
+<div class="post-card-body">
+<div class="post-card-cat">From Substack</div>
+<h3 class="post-card-title"><a href="#">Why Traditional GDP Releases Are Becoming Obsolete</a></h3>
+<p class="post-card-excerpt">The gap between when economic activity happens and when it's officially measured is a relic of the pre-satellite era. Here's why that's changing.</p>
+<div class="post-card-meta">
+<img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" alt="Marcus Chen">
+<span>Marcus Chen</span>
+<span>&#183;</span>
+<span>Jan 28, 2026</span>
+</div>
+</div>
+</article>
+
+<article class="post-card" data-category="methodology">
+<img class="post-card-img" src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80" alt="Machine learning pipeline visualization">
+<div class="post-card-body">
+<div class="post-card-cat">Methodology</div>
+<h3 class="post-card-title"><a href="#">Inside Our ML Pipeline: From Raw Imagery to GDP Signal in 4 Hours</a></h3>
+<p class="post-card-excerpt">A technical deep-dive into the infrastructure that processes terabytes of satellite data daily to produce economic indicators.</p>
+<div class="post-card-meta">
+<img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face" alt="Sofia Lindgren">
+<span>Sofia Lindgren</span>
+<span>&#183;</span>
+<span>Jan 15, 2026</span>
+</div>
+</div>
+</article>
+
+<article class="post-card" data-category="podcast">
+<img class="post-card-img" src="https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=600&q=80" alt="Podcast recording studio">
+<div class="post-card-body">
+<div class="post-card-cat">Podcast</div>
+<h3 class="post-card-title"><a href="#">Episode 12: The Future of Alternative Data in Institutional Investing</a></h3>
+<p class="post-card-excerpt">Dr. Amara Osei joins the Macro Signals podcast to discuss how satellite-derived indicators are reshaping quantitative strategies.</p>
+<div class="post-card-meta">
+<img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=80&h=80&fit=crop&crop=face" alt="Dr. Amara Osei">
+<span>Dr. Amara Osei</span>
+<span>&#183;</span>
+<span>Jan 6, 2026</span>
+</div>
+</div>
+</article>
+
+</div>
+
+<!-- Podcast embed -->
+<div style="margin-top:48px">
+<div class="sec-label">Latest Episode</div>
+<div class="podcast-card">
+<div class="podcast-icon">&#127911;</div>
+<div class="podcast-body">
+<h3>Ep. 12 — The Future of Alternative Data in Institutional Investing</h3>
+<p>Dr. Amara Osei discusses satellite-derived indicators, backtesting rigor, and why the smartest macro funds are looking up. <span style="color:var(--coral)">42:18</span></p>
+<div class="podcast-bar"><div class="podcast-bar-fill"></div></div>
+</div>
+<a href="#" class="btn" style="flex-shrink:0;padding:10px 24px;font-size:15px">Play</a>
+</div>
+</div>
+
+<!-- Newsletter -->
+<div class="newsletter">
+<h2>Subscribe to Atlas Insights</h2>
+<p>Weekly research highlights, forecast updates, and market commentary delivered to your inbox.</p>
+<form onsubmit="event.preventDefault()">
+<label for="blog-email" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Email address</label>
+<input id="blog-email" type="email" placeholder="Enter your email" required aria-label="Email address">
+<button type="submit" class="btn">Subscribe</button>
+</form>
+</div>
+
+</section>
+
+<footer>
+<div class="ft-logo"><img src="https://atlasanalytics.com/wp-content/uploads/2025/01/Group-30.png" alt="Atlas Analytics Logo"><span class="ft-brand">Atlas Analytics</span></div>
+<div class="ft-loc">Boston, Massachusetts, 02129</div>
+<div class="ft-bot">
+<div class="ft-copy">Copyright 2025. All rights reserved.</div>
+<div class="ft-soc">
+<a href="#" aria-label="Bookmark"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg></a>
+<a href="#" aria-label="X"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+<a href="#" aria-label="YouTube"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M21.543 6.498C22 8.28 22 12 22 12s0 3.72-.457 5.502c-.254.985-.997 1.76-1.938 2.022C17.896 20 12 20 12 20s-5.893 0-7.605-.476c-.945-.266-1.687-1.04-1.938-2.022C2 15.72 2 12 2 12s0-3.72.457-5.502c.254-.985.997-1.76 1.938-2.022C6.107 4 12 4 12 4s5.896 0 7.605.476c.945.266 1.687 1.04 1.938 2.022zM10 15.5l6-3.5-6-3.5v7z"/></svg></a>
+<a href="#" aria-label="LinkedIn"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14m-.5 15.5v-5.3a3.26 3.26 0 00-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 011.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 001.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 00-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg></a>
+</div>
+</div>
+</footer>
+</div>
+
+<script>
+window.addEventListener('scroll',function(){document.querySelector('nav').classList.toggle('scrolled',window.scrollY>50)});
+var t=document.getElementById('mt'),c=document.getElementById('mc'),n=document.getElementById('mn');
+t.addEventListener('click',function(){n.classList.add('open')});
+c.addEventListener('click',function(){n.classList.remove('open')});
+n.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){n.classList.remove('open')})});
+
+// Category filter
+document.querySelectorAll('.filter-tab').forEach(function(tab){
+tab.addEventListener('click',function(){
+document.querySelectorAll('.filter-tab').forEach(function(t){t.classList.remove('active')});
+tab.classList.add('active');
+var f=tab.dataset.filter;
+document.querySelectorAll('[data-category]').forEach(function(el){
+el.style.display=(f==='all'||el.dataset.category===f)?'':'none';
+});
+});
+});
+</script>
+</body>
+</html>

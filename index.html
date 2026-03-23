@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atlas Analytics | Predictive GDP Insights for Investors - Real-Time Satellite Economic Intelligence</title>
+<meta name="description" content="Atlas Analytics delivers real-time GDP forecasts powered by satellite imagery and machine learning. Trusted by 120+ institutional investors, central banks, and research teams across 38 countries.">
+<link href="https://fonts.googleapis.com/css2?family=Encode+Sans+Condensed:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0b1a;--panel:rgba(15,15,35,0.92);--nav-bg:#141428;--text:#fff;--dim:#b0b0c8;--coral:#e8546a;--coral-h:#d4435a;--border:rgba(255,255,255,0.1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Encode Sans Condensed',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:0;background:linear-gradient(180deg,rgba(11,11,26,.3),rgba(11,11,26,.6) 40%,rgba(11,11,26,.85)),url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&q=80') center/cover no-repeat}
+.wrap{position:relative;z-index:1}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;justify-content:space-between;align-items:center;padding:16px 40px;background:transparent;border-bottom:1px solid transparent;transition:background .3s,border-color .3s}
+nav.scrolled{background:var(--nav-bg);border-bottom-color:var(--border)}
+.logo{display:flex;flex-direction:column;align-items:flex-start;text-decoration:none;color:var(--text);gap:4px}
+.logo img{height:120px;width:auto}
+.ham{background:var(--coral);border:none;color:#fff;width:44px;height:44px;border-radius:8px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.ham:hover{background:var(--coral-h)}
+.mnav{display:none;position:fixed;inset:0;z-index:99;background:var(--panel);flex-direction:column;align-items:center;justify-content:center;gap:24px}
+.mnav.open{display:flex}
+.mnav a{color:var(--text);text-decoration:none;font-size:20px;font-weight:500;padding:12px 24px;border-radius:8px}
+.mnav a:hover{background:rgba(232,84,106,.15)}
+.mnav-x{position:absolute;top:20px;right:40px;background:none;border:none;color:var(--text);font-size:28px;cursor:pointer}
+
+/* Hero */
+.hero{padding:160px 40px 80px;text-align:center;max-width:900px;margin:0 auto}
+.hero h1{font-size:52px;font-weight:700;margin-bottom:20px;line-height:1.15}
+.hero h1 span{color:var(--coral)}
+.hero p{font-size:18px;color:var(--dim);line-height:1.7;max-width:650px;margin:0 auto 36px}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-block;background:var(--coral);color:#fff;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:600;transition:background .2s;border:none;cursor:pointer}
+.btn:hover{background:var(--coral-h)}
+.btn-o{display:inline-block;background:transparent;color:var(--coral);text-decoration:none;padding:13px 35px;border-radius:8px;font-size:16px;font-weight:600;border:1px solid var(--coral);transition:all .2s;cursor:pointer}
+.btn-o:hover{background:rgba(232,84,106,.1)}
+
+/* Audience tabs */
+.audience{padding:0 40px 60px;max-width:1200px;margin:0 auto}
+.aud-tabs{display:flex;justify-content:center;gap:12px;margin-bottom:40px;flex-wrap:wrap}
+.aud-tab{padding:10px 28px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;border:1px solid var(--border);color:var(--dim);background:transparent;transition:all .2s;font-family:inherit}
+.aud-tab:hover,.aud-tab.active{background:rgba(232,84,106,.15);color:var(--coral);border-color:var(--coral)}
+.aud-panel{display:none;background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:48px;text-align:center}
+.aud-panel.active{display:block}
+.aud-panel h3{font-size:24px;font-weight:700;margin-bottom:12px}
+.aud-panel p{font-size:16px;color:var(--dim);line-height:1.7;max-width:600px;margin:0 auto 24px}
+
+/* Sections */
+.sec{padding:60px 40px;max-width:1200px;margin:0 auto}
+.sec-label{font-size:16px;text-transform:uppercase;letter-spacing:2px;color:var(--coral);font-weight:600;margin-bottom:12px}
+.sec-title{font-size:32px;font-weight:700;margin-bottom:16px}
+.sec-desc{font-size:16px;color:var(--dim);line-height:1.7;max-width:600px;margin-bottom:48px}
+
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:36px 24px;text-align:center;transition:transform .3s,border-color .3s}
+.stat:hover{transform:translateY(-4px);border-color:rgba(232,84,106,.3)}
+.stat-num{font-size:42px;font-weight:700;color:var(--coral);margin-bottom:8px;line-height:1}
+.stat-label{font-size:16px;color:var(--dim);line-height:1.5}
+
+/* Products */
+.products-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.product{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:40px;transition:transform .3s,border-color .3s}
+.product:hover{transform:translateY(-4px);border-color:rgba(232,84,106,.3)}
+.product-icon{font-size:48px;margin-bottom:16px;display:block}
+.product h3{font-size:22px;font-weight:700;margin-bottom:8px}
+.product .product-tag{font-size:14px;color:var(--coral);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.product p{font-size:16px;color:var(--dim);line-height:1.7;margin-bottom:20px}
+.product ul{list-style:none;margin-bottom:24px}
+.product ul li{font-size:16px;color:var(--dim);padding:6px 0;padding-left:20px;position:relative;line-height:1.5}
+.product ul li::before{content:'→';position:absolute;left:0;color:var(--coral)}
+
+/* How it works */
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;counter-reset:step}
+.how-step{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:32px;text-align:center;position:relative}
+.how-step::before{counter-increment:step;content:counter(step);display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:var(--coral);color:#fff;font-size:18px;font-weight:700;margin:0 auto 16px}
+.how-step h3{font-size:18px;font-weight:600;margin-bottom:8px}
+.how-step p{font-size:16px;color:var(--dim);line-height:1.6}
+
+/* Logos */
+.logos-strip{display:flex;align-items:center;justify-content:center;gap:48px;flex-wrap:wrap;padding:40px 0;opacity:.6}
+.logos-strip span{font-size:20px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--dim)}
+
+/* Testimonial highlight */
+.test-highlight{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:48px;display:flex;gap:32px;align-items:center;transition:border-color .3s}
+.test-highlight:hover{border-color:rgba(232,84,106,.3)}
+.test-highlight-img{width:100px;height:100px;border-radius:50%;object-fit:cover;border:2px solid var(--border);flex-shrink:0}
+.test-highlight-body{flex:1}
+.test-highlight-quote{font-size:18px;line-height:1.7;font-style:italic;margin-bottom:16px;padding-left:20px;border-left:3px solid var(--coral)}
+.test-highlight-name{font-size:16px;font-weight:600}
+.test-highlight-role{font-size:16px;color:var(--dim)}
+
+/* CTA */
+.cta-wrap{margin:80px auto 0;max-width:1200px;padding:0 40px}
+.cta{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:60px;text-align:center}
+.cta h2{font-size:28px;font-weight:700;margin-bottom:12px}
+.cta p{font-size:16px;color:var(--dim);margin-bottom:32px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6}
+.cta-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+
+/* Footer */
+footer{margin-top:100px;text-align:center;padding:60px 40px 0;position:relative}
+footer::before{content:'';display:block;width:60%;max-width:600px;height:1px;background:var(--border);margin:0 auto 48px}
+.ft-logo{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:20px}
+.ft-logo img{height:120px;width:auto}
+.ft-brand{font-size:16px;text-transform:uppercase;letter-spacing:3px;color:var(--dim)}
+.ft-loc{font-size:16px;color:var(--dim);margin-bottom:40px}
+.ft-bot{display:flex;justify-content:space-between;align-items:center;padding:24px 0;border-top:1px solid var(--border);max-width:1200px;margin:0 auto}
+.ft-copy{font-size:16px;color:var(--dim)}
+.ft-soc{display:flex;gap:24px}
+.ft-soc a{color:var(--dim);text-decoration:none;transition:color .2s;font-size:24px}
+.ft-soc a:hover{color:var(--text)}
+
+/* Responsive */
+@media(max-width:1024px){
+.stats-grid{grid-template-columns:repeat(2,1fr)}
+.products-grid{grid-template-columns:1fr}
+.how-grid{grid-template-columns:repeat(2,1fr)}
+}
+
+@media(max-width:768px){
+nav{padding:14px 20px}
+.logo img{height:55px}
+.hero{padding:130px 20px 60px}
+.hero h1{font-size:32px}
+.hero p{font-size:16px}
+.hero-btns{flex-direction:column;align-items:center}
+.hero-btns .btn,.hero-btns .btn-o{width:100%;max-width:300px;text-align:center}
+.sec{padding:40px 16px}
+.sec-title{font-size:26px}
+.sec-desc{max-width:100%}
+.stats-grid{grid-template-columns:repeat(2,1fr)}
+.how-grid{grid-template-columns:1fr}
+.products-grid{grid-template-columns:1fr}
+.product .btn{width:100%;text-align:center}
+.test-highlight{flex-direction:column;text-align:center;padding:32px}
+.test-highlight-img{margin:0 auto}
+.test-highlight-quote{border-left:none;padding-left:0;border-top:3px solid var(--coral);padding-top:16px}
+.logos-strip{gap:24px}
+.logos-strip span{font-size:16px}
+.cta-wrap{padding:0 16px}
+.cta{padding:40px 20px}
+.cta h2{font-size:22px}
+.cta-btns{flex-direction:column;align-items:center}
+.cta-btns .btn,.cta-btns .btn-o{width:100%;max-width:300px;text-align:center}
+.btn-o{margin-left:0}
+.audience{padding:0 16px 40px}
+.aud-tabs{gap:8px}
+.aud-tab{padding:8px 20px;font-size:15px}
+.aud-panel{padding:32px 20px}
+.aud-panel h3{font-size:20px}
+footer{padding:40px 16px 0;margin-top:60px}
+.ft-logo img{height:80px}
+.ft-bot{flex-direction:column;gap:16px;text-align:center}
+.ft-soc{justify-content:center}
+}
+
+@media(max-width:480px){
+.hero{padding:120px 14px 50px}
+.hero h1{font-size:26px}
+.hero-btns .btn,.hero-btns .btn-o{max-width:100%}
+.sec{padding:32px 12px}
+.sec-title{font-size:22px}
+.sec-label{font-size:13px;letter-spacing:1.5px}
+.stats-grid{grid-template-columns:1fr}
+.stat{padding:28px 20px}
+.stat-num{font-size:34px}
+.product{padding:24px}
+.product-icon{font-size:36px}
+.product h3{font-size:20px}
+.how-step{padding:24px}
+.aud-tabs{flex-direction:column;align-items:stretch}
+.aud-tab{text-align:center}
+.aud-panel{padding:24px 16px}
+.aud-panel h3{font-size:18px}
+.test-highlight{padding:24px}
+.test-highlight-quote{font-size:16px}
+.test-highlight-img{width:80px;height:80px}
+.cta{padding:32px 16px}
+.cta h2{font-size:20px}
+.cta-btns .btn,.cta-btns .btn-o{max-width:100%}
+.btn{padding:12px 28px;width:100%;text-align:center}
+.btn-o{padding:12px 28px;width:100%;text-align:center}
+footer{padding:32px 12px 0}
+.ft-bot{padding:20px 0}
+.ft-logo img{height:60px}
+}
+</style>
+</head>
+<body>
+<div class="bg" role="presentation"></div>
+<div class="wrap">
+
+<!-- Nav -->
+<nav>
+<a href="index.html" class="logo"><img src="https://atlasanalytics.com/wp-content/uploads/2025/01/Group-30.png" alt="Atlas Analytics Logo"></a>
+<button class="ham" id="mt" aria-label="Open menu">&#9776;</button>
+</nav>
+<div class="mnav" id="mn">
+<button class="mnav-x" id="mc" aria-label="Close menu">&times;</button>
+<a href="index.html">Home</a><a href="teams.html">Team</a><a href="testimonials.html">Testimonials</a><a href="blog.html">Insights</a><a href="dashboard.html">Dashboard</a><a href="careers.html">Careers</a><a href="#login" class="btn-o" style="border:1px solid var(--coral);padding:12px 24px;border-radius:8px">Client Login</a><a href="#demo" class="btn">Request a Demo</a>
+</div>
+
+<!-- Hero -->
+<section class="hero">
+<h1>Predictive GDP Insights <span>for Investors</span></h1>
+<p>Atlas Analytics delivers satellite-derived economic intelligence in near real-time — giving institutional investors, central banks, and researchers the confidence to act weeks before traditional data releases.</p>
+<div class="hero-btns">
+<a href="#demo" class="btn">Request a Demo</a>
+<a href="#demo" class="btn-o">Talk to Us</a>
+<a href="#subscribe" class="btn-o">Subscribe</a>
+</div>
+</section>
+
+<!-- Audience Segmentation -->
+<div class="audience">
+<div class="aud-tabs">
+<button class="aud-tab active" data-target="aud-investors">Investors</button>
+<button class="aud-tab" data-target="aud-institutions">Institutions</button>
+<button class="aud-tab" data-target="aud-researchers">Researchers</button>
+</div>
+<div class="aud-panel active" id="aud-investors">
+<h3>Gain a Measurable Edge on Macro</h3>
+<p>Our weekly GDP nowcasts and trade flow indicators give macro funds and portfolio managers a 3-6 week lead on official data releases — translating directly into alpha.</p>
+<a href="#demo" class="btn">Talk to Our Team</a>
+</div>
+<div class="aud-panel" id="aud-institutions">
+<h3>Institutional-Grade Economic Intelligence</h3>
+<p>Central banks and sovereign wealth funds use Atlas data to validate internal models, monitor emerging markets, and inform policy decisions with satellite-verified signals.</p>
+<a href="#demo" class="btn">Schedule a Briefing</a>
+</div>
+<div class="aud-panel" id="aud-researchers">
+<h3>Peer-Reviewed Methodology, Open Collaboration</h3>
+<p>Access granular satellite-derived economic datasets for academic research. Our methodology is published in Nature and validated across 38 countries.</p>
+<a href="#demo" class="btn">Request Data Access</a>
+</div>
+</div>
+
+<!-- Stats -->
+<section class="sec">
+<div class="sec-label">Impact</div>
+<h2 class="sec-title">The Numbers Behind the Intelligence</h2>
+<p class="sec-desc">Accuracy, speed, and coverage that institutional clients depend on.</p>
+<div class="stats-grid">
+<div class="stat"><div class="stat-num">94%</div><div class="stat-label">GDP forecast accuracy across 38 countries</div></div>
+<div class="stat"><div class="stat-num">3.2x</div><div class="stat-label">Faster than traditional BEA advance estimates</div></div>
+<div class="stat"><div class="stat-num">120+</div><div class="stat-label">Institutional clients across finance and government</div></div>
+<div class="stat"><div class="stat-num">47</div><div class="stat-label">Peer-reviewed publications by our research team</div></div>
+</div>
+</section>
+
+<!-- Products -->
+<section class="sec" id="products">
+<div class="sec-label">Products</div>
+<h2 class="sec-title">Satellite-Derived Economic Intelligence</h2>
+<p class="sec-desc">Two flagship products built for different decision timelines — both powered by proprietary satellite imagery and machine learning.</p>
+<div class="products-grid">
+<div class="product">
+<span class="product-icon">&#128752;</span>
+<div class="product-tag">Real-Time Nowcasting</div>
+<h3>ROY</h3>
+<p>Weekly GDP nowcasts derived from satellite imagery, nighttime luminosity, and trade flow signals. Designed for portfolio managers and macro strategists who need to move before consensus.</p>
+<ul>
+<li>Weekly updates across 38 countries</li>
+<li>Component-level GDP breakdown</li>
+<li>6-week average lead on official releases</li>
+<li>API and dashboard delivery</li>
+</ul>
+<a href="dashboard.html" class="btn" style="padding:10px 24px;font-size:15px">View Live Dashboard</a>
+</div>
+<div class="product">
+<span class="product-icon">&#127758;</span>
+<div class="product-tag">Quarterly Forecasting</div>
+<h3>JACK</h3>
+<p>Quarterly GDP forecasts with full component analysis — net exports, private inventories, consumer spending, and government contribution. Built for institutional research teams and policy analysts.</p>
+<ul>
+<li>Quarterly forecasts with confidence intervals</li>
+<li>Waterfall decomposition by GDP component</li>
+<li>Historical backtesting across economic cycles</li>
+<li>Custom reporting and white-label options</li>
+</ul>
+<a href="#demo" class="btn" style="padding:10px 24px;font-size:15px">Request Sample Report</a>
+</div>
+</div>
+</section>
+
+<!-- How It Works -->
+<section class="sec">
+<div class="sec-label">Methodology</div>
+<h2 class="sec-title">From Orbit to Insight</h2>
+<p class="sec-desc">How we transform terabytes of satellite imagery into actionable economic intelligence.</p>
+<div class="how-grid">
+<div class="how-step"><h3>Capture</h3><p>We ingest daily satellite imagery from multiple orbital sources — optical, SAR, and nighttime luminosity — covering every major economy.</p></div>
+<div class="how-step"><h3>Process</h3><p>Proprietary ML pipelines extract economic signals from raw imagery: port activity, construction patterns, agricultural output, urban mobility, and more.</p></div>
+<div class="how-step"><h3>Deliver</h3><p>Signals are calibrated against macroeconomic models and delivered as GDP nowcasts, trade indicators, and component forecasts via API and dashboard.</p></div>
+</div>
+</section>
+
+<!-- Trusted By -->
+<section class="sec" style="text-align:center">
+<div class="sec-label">Trusted By</div>
+<h2 class="sec-title">Trusted Across Finance, Government &amp; Research</h2>
+<div class="logos-strip">
+<span>Bloomberg</span><span>Citadel</span><span>World Bank</span><span>Goldman Sachs</span><span>Federal Reserve</span><span>Bridgewater</span>
+</div>
+</section>
+
+<!-- Testimonial Highlight -->
+<section class="sec">
+<div class="sec-label">Client Results</div>
+<h2 class="sec-title">What Our Clients Say</h2>
+<p class="sec-desc">Portfolio managers and chief economists share how Atlas data shapes their decisions.</p>
+<div class="test-highlight">
+<img class="test-highlight-img" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&h=200&fit=crop&crop=face" alt="David Thornton">
+<div class="test-highlight-body">
+<div class="test-highlight-quote">Atlas Analytics gave us a 6-week head start on Q3 GDP revisions. That edge translated directly into alpha for our macro fund. The satellite data is remarkably consistent.</div>
+<div class="test-highlight-name">David Thornton</div>
+<div class="test-highlight-role">Chief Investment Officer, Meridian Capital</div>
+</div>
+</div>
+<div style="text-align:center;margin-top:32px"><a href="testimonials.html" class="btn-o">Read More Client Stories</a></div>
+</section>
+
+<!-- Subscribe -->
+<section class="sec" id="subscribe" style="text-align:center;max-width:600px">
+<div class="sec-label">Stay Informed</div>
+<h2 class="sec-title">Subscribe to Atlas Insights</h2>
+<p style="font-size:16px;color:var(--dim);line-height:1.7;margin-bottom:32px">Weekly economic intelligence briefings, research highlights, and forecast updates delivered to your inbox.</p>
+<form style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center" onsubmit="event.preventDefault()">
+<label for="subscribe-email" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Email address</label>
+<input id="subscribe-email" type="email" placeholder="Enter your email" required style="flex:1;min-width:220px;padding:14px 20px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:16px;font-family:inherit;outline:none" aria-label="Email address">
+<button type="submit" class="btn">Subscribe</button>
+</form>
+</section>
+
+<!-- Client Login Placeholder -->
+<section class="sec" id="login" style="text-align:center;max-width:500px">
+<div style="background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:48px">
+<div class="sec-label" style="margin-bottom:16px">Client Portal</div>
+<h2 class="sec-title" style="margin-bottom:12px">Client Login</h2>
+<p style="font-size:16px;color:var(--dim);line-height:1.7;margin-bottom:24px">Our authenticated client portal is coming soon. Existing clients can contact their account manager for dashboard access.</p>
+<form style="display:flex;flex-direction:column;gap:12px;max-width:320px;margin:0 auto" onsubmit="event.preventDefault()">
+<label for="login-email" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)">Email address</label>
+<input id="login-email" type="email" placeholder="Email address" style="padding:14px 20px;border-radius:8px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:16px;font-family:inherit;outline:none" aria-label="Email address">
+<button type="submit" class="btn" style="width:100%">Notify Me When Available</button>
+</form>
+</div>
+</section>
+
+<!-- CTA -->
+<div class="cta-wrap" id="demo">
+<div class="cta">
+<h2>See Tomorrow's Economy Today</h2>
+<p>Request a personalized demo and discover how satellite-derived GDP nowcasts can give your team a measurable decision advantage.</p>
+<div class="cta-btns">
+<a href="#" class="btn">Request a Demo</a>
+<a href="careers.html" class="btn-o">We're Hiring</a>
+</div>
+</div>
+</div>
+
+<!-- Footer -->
+<footer>
+<div class="ft-logo"><img src="https://atlasanalytics.com/wp-content/uploads/2025/01/Group-30.png" alt="Atlas Analytics Logo"><span class="ft-brand">Atlas Analytics</span></div>
+<div class="ft-loc">Boston, Massachusetts, 02129</div>
+<div class="ft-bot">
+<div class="ft-copy">Copyright 2025. All rights reserved.</div>
+<div class="ft-soc">
+<a href="#" aria-label="Bookmark"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg></a>
+<a href="#" aria-label="X"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+<a href="#" aria-label="YouTube"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M21.543 6.498C22 8.28 22 12 22 12s0 3.72-.457 5.502c-.254.985-.997 1.76-1.938 2.022C17.896 20 12 20 12 20s-5.893 0-7.605-.476c-.945-.266-1.687-1.04-1.938-2.022C2 15.72 2 12 2 12s0-3.72.457-5.502c.254-.985.997-1.76 1.938-2.022C6.107 4 12 4 12 4s5.896 0 7.605.476c.945.266 1.687 1.04 1.938 2.022zM10 15.5l6-3.5-6-3.5v7z"/></svg></a>
+<a href="#" aria-label="LinkedIn"><svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14m-.5 15.5v-5.3a3.26 3.26 0 00-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 011.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 001.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 00-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg></a>
+</div>
+</div>
+</footer>
+</div>
+
+<script>
+// Nav scroll
+window.addEventListener('scroll',function(){document.querySelector('nav').classList.toggle('scrolled',window.scrollY>50)});
+
+// Mobile menu
+var t=document.getElementById('mt'),c=document.getElementById('mc'),n=document.getElementById('mn');
+t.addEventListener('click',function(){n.classList.add('open')});
+c.addEventListener('click',function(){n.classList.remove('open')});
+n.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){n.classList.remove('open')})});
+
+// Audience tabs
+document.querySelectorAll('.aud-tab').forEach(function(tab){
+tab.addEventListener('click',function(){
+document.querySelectorAll('.aud-tab').forEach(function(t){t.classList.remove('active')});
+document.querySelectorAll('.aud-panel').forEach(function(p){p.classList.remove('active')});
+tab.classList.add('active');
+document.getElementById(tab.dataset.target).classList.add('active');
+});
+});
+</script>
+</body>
+</html>

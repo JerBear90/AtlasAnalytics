@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build output
+portal/client/dist/
+
+# Environment files
+.env
+portal/server/.env
+
+# Database files
+portal/server/data/*.db
+portal/server/data/*.db-shm
+portal/server/data/*.db-wal
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Kiro
+.kiro/

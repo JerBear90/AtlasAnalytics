@@ -6,6 +6,7 @@ import userRoutes from './routes/userRoutes';
 import csvRoutes from './routes/csvRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import exportRoutes from './routes/exportRoutes';
+import settingsRoutes from './routes/settingsRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
@@ -38,6 +39,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/csv', csvRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Centralized error handler
 app.use(errorHandler);

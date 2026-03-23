@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd portal/client && npm install && npm run build",
+  "outputDirectory": "portal/client/dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}

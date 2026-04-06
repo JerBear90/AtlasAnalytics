@@ -31,11 +31,14 @@ router.get('/:format', async (req: Request, res: Response) => {
       };
     }
 
+    const tab = req.query.tab as string | undefined;
+
     const result = await ExportService.exportData(
       req.user!.id,
       req.user!.role,
       format,
-      filters
+      filters,
+      tab
     );
 
     res.setHeader('Content-Type', result.contentType);

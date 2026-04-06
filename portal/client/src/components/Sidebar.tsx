@@ -166,13 +166,6 @@ export default function Sidebar({
               {(isAcademic ? ACADEMIC_DATA_TABS : RETAIL_DATA_TABS).map(tabItem)}
             </div>
 
-            {!isAcademic && (
-              <div className="mb-6">
-                <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Components</div>
-                {RETAIL_COMPONENT_TABS.map(tabItem)}
-              </div>
-            )}
-
             {/* Filters */}
             {filterOptions && (
               <div className="mb-6">
@@ -226,6 +219,13 @@ export default function Sidebar({
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {!isAcademic && (
+              <div className="mb-6">
+                <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Components</div>
+                {RETAIL_COMPONENT_TABS.map(tabItem)}
               </div>
             )}
 

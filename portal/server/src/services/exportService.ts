@@ -1,11 +1,6 @@
-import {
-  UserRole,
-  ExportFormat,
-  DashboardFilters,
-  ExportResult,
-} from '../types';
-import { EconomicDataRepository } from '../repositories/economicDataRepository';
-import { getDataScope, canExport } from '../middleware/roleMiddleware';
+import { UserRole, ExportFormat, DashboardFilters, ExportResult } from '../types';
+import { ClientDataRepository } from '../repositories/clientDataRepository';
+import { canExport } from '../middleware/roleMiddleware';
 
 export class ExportError extends Error {
   constructor(message: string, public statusCode: number = 403) {
@@ -19,105 +14,134 @@ export const ExportService = {
     userId: string,
     role: UserRole,
     format: ExportFormat,
-    filters: DashboardFilters
+    filters: DashboardFilters,
+    tab?: string
   ): Promise<ExportResult> {
-    // Check role permission for requested format
     if (!canExport(role, format)) {
       throw new ExportError(`Your account does not have permission to export in ${format.toUpperCase()} format.`);
     }
 
-    const scope = getDataScope(role);
-
-    // Apply role scoping to filters
-    const scopedFilters = { ...filters };
-    if (scope.countries === 'limited' && (!scopedFilters.countries || scopedFilters.countries.length === 0)) {
-      scopedFilters.countries = EconomicDataRepository.LIMITED_COUNTRIES;
-    }
-
-    const records = await EconomicDataRepository.queryByRoleAndFilters(role, scopedFilters);
     const exportedAt = new Date();
-    const effectiveFormat = format === 'all' ? 'json' : format;
+    const effectiveFormat = format === 'all' ? 'csv' : format;
+    const { headers, rows } = getTabData(tab || 'quarterly', filters);
 
     let data: Buffer;
     let contentType: string;
     let extension: string;
 
     if (effectiveFormat === 'csv') {
-      const csvContent = generateCSV(records, exportedAt);
-      data = Buffer.from(csvContent, 'utf-8');
+      data = Buffer.from(generateCSV(headers, rows, exportedAt), 'utf-8');
       contentType = 'text/csv';
       extension = 'csv';
     } else {
-      const jsonContent = generateJSON(records, exportedAt, filters);
-      data = Buffer.from(jsonContent, 'utf-8');
+      data = Buffer.from(generateJSON(headers, rows, exportedAt, tab || 'quarterly'), 'utf-8');
       contentType = 'application/json';
       extension = 'json';
     }
 
-    const filename = `atlas_export_${exportedAt.toISOString().split('T')[0]}.${extension}`;
+    const tabName = tab || 'data';
+    const filename = `atlas_${tabName}_${exportedAt.toISOString().split('T')[0]}.${extension}`;
 
     return {
-      filename,
-      contentType,
-      data,
-      metadata: {
-        exportedAt,
-        rowCount: records.length,
-        format: effectiveFormat as ExportFormat,
-        filters,
-      },
+      filename, contentType, data,
+      metadata: { exportedAt, rowCount: rows.length, format: effectiveFormat as ExportFormat, filters },
     };
   },
 };
 
-interface ExportRecord {
-  countryCode: string;
-  indicatorType: string;
-  quarter: string;
-  observationDate: Date;
-  value: number;
-  metadata: Record<string, unknown>;
+function getTabData(tab: string, filters: DashboardFilters): { headers: string[]; rows: string[][] } {
+  const startDate = filters.dateRange?.start ? String(filters.dateRange.start).split('T')[0] : undefined;
+  const endDate = filters.dateRange?.end ? String(filters.dateRange.end).split('T')[0] : undefined;
+  const quarter = filters.quarter;
+
+  switch (tab) {
+    case 'quarterly': {
+      const data = ClientDataRepository.getQuarterlyTimeSeries(startDate, endDate, quarter);
+      return {
+        headers: ['Date', 'Year', 'Quarter', 'Date2', 'US GDP (SAAR)', 'Atlas Predicted (SAAR)'],
+        rows: data.map(r => [r.date, String(r.year), String(r.quarter), r.date2, r.usGdp, r.atlasPredicted]),
+      };
+    }
+    case 'weekly': {
+      const data = ClientDataRepository.getWeeklyTimeSeries(quarter);
+      return {
+        headers: ['Prediction Quarter', 'Date', 'Year', 'Day', 'Month', 'Core GDP', 'Core GDP Updated', 'Net Exports', 'Private Inventories', 'GDP'],
+        rows: data.map(r => [r.predictionQuarter, r.date, String(r.year), r.dayOfWeek, r.month,
+          r.coreGdp != null ? String(r.coreGdp) : '', r.coreGdpUpdated != null ? String(r.coreGdpUpdated) : '',
+          r.netExports != null ? String(r.netExports) : '', r.privateInventories != null ? String(r.privateInventories) : '',
+          r.gdp != null ? String(r.gdp) : '']),
+      };
+    }
+    case 'financial': {
+      const data = ClientDataRepository.getFinancialTargets();
+      return {
+        headers: ['Section', 'ETF', 'Target Price', 'Trading Price', 'Deviation'],
+        rows: data.map(r => [r.section, r.etf,
+          r.targetPrice != null ? String(r.targetPrice) : '', r.tradingPrice != null ? String(r.tradingPrice) : '', r.deviation]),
+      };
+    }
+    case 'exports': {
+      const data = ClientDataRepository.getNxResults(startDate, endDate);
+      return {
+        headers: ['Date', 'Year', 'Quarter', 'Date2', 'Trade Balance', 'Trade Balance (% Ch)', 'NX Results'],
+        rows: data.map(r => [r.date, String(r.year), String(r.quarter), r.date2,
+          r.tradeBalance != null ? String(r.tradeBalance) : '', r.tradeBalancePctCh, r.nxResults]),
+      };
+    }
+    case 'inventories': {
+      const data = ClientDataRepository.getPiResults(startDate, endDate);
+      return {
+        headers: ['Date', 'Year', 'Quarter', 'Date2', 'Private Inventories'],
+        rows: data.map(r => [r.date, String(r.year), String(r.quarter), r.date2, r.privateInventories]),
+      };
+    }
+    case 'headline_gdp':
+    case 'core_gdp':
+    case 'state_gdp': {
+      const typeMap: Record<string, string> = { headline_gdp: 'headline', core_gdp: 'core', state_gdp: 'state' };
+      const data = ClientDataRepository.getAcademicGdp(typeMap[tab], startDate, endDate);
+      return {
+        headers: ['Date', 'Year', 'Quarter', 'Date 2', 'BEA Actual', 'Atlas Predictions'],
+        rows: data.map(r => [r.date, String(r.year), String(r.quarter), r.date2, r.beaActual, r.atlasPredicted]),
+      };
+    }
+    default:
+      return { headers: [], rows: [] };
+  }
 }
 
-function generateCSV(records: ExportRecord[], exportedAt: Date): string {
-  const lines: string[] = [];
+function escapeCSV(val: string): string {
+  if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+    return `"${val.replace(/"/g, '""')}"`;
+  }
+  return val;
+}
 
-  // Header comment with metadata
+function generateCSV(headers: string[], rows: string[][], exportedAt: Date): string {
+  const lines: string[] = [];
   lines.push(`# Atlas Analytics Data Export`);
   lines.push(`# Exported: ${exportedAt.toISOString()}`);
-  lines.push(`# Records: ${records.length}`);
+  lines.push(`# Records: ${rows.length}`);
   lines.push('');
-
-  // Column headers
-  lines.push('country_code,indicator_type,quarter,observation_date,value');
-
-  // Data rows
-  for (const r of records) {
-    const date = r.observationDate instanceof Date
-      ? r.observationDate.toISOString().split('T')[0]
-      : String(r.observationDate);
-    lines.push(`${r.countryCode},${r.indicatorType},${r.quarter},${date},${r.value}`);
+  lines.push(headers.map(escapeCSV).join(','));
+  for (const row of rows) {
+    lines.push(row.map(escapeCSV).join(','));
   }
-
   return lines.join('\n');
 }
 
-function generateJSON(records: ExportRecord[], exportedAt: Date, filters: DashboardFilters): string {
+function generateJSON(headers: string[], rows: string[][], exportedAt: Date, tab: string): string {
   return JSON.stringify({
     metadata: {
       source: 'Atlas Analytics Portal',
       exportedAt: exportedAt.toISOString(),
-      recordCount: records.length,
-      filters,
+      tab,
+      recordCount: rows.length,
     },
-    data: records.map(r => ({
-      countryCode: r.countryCode,
-      indicatorType: r.indicatorType,
-      quarter: r.quarter,
-      observationDate: r.observationDate instanceof Date
-        ? r.observationDate.toISOString().split('T')[0]
-        : String(r.observationDate),
-      value: r.value,
-    })),
+    data: rows.map(row => {
+      const obj: Record<string, string> = {};
+      headers.forEach((h, i) => { obj[h] = row[i] || ''; });
+      return obj;
+    }),
   }, null, 2);
 }

@@ -229,7 +229,7 @@ export default function DashboardPage() {
         </div>
         {isClientTab && (
           <div className="flex gap-2.5">
-            <ExportButton filters={filters} />
+            <ExportButton filters={filters} tab={activeTab} />
           </div>
         )}
       </div>

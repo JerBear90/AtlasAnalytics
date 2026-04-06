@@ -1,8 +1,51 @@
 import { Router, Request, Response } from 'express';
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { AuthService, AuthError } from '../services/authService';
 import { authMiddleware } from '../middleware/authMiddleware';
 
 const router = Router();
+
+// Configure Google OAuth if credentials are set
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const googleCallbackUrl = process.env.GOOGLE_CALLBACK_URL || 'http://localhost:4000/api/auth/google/callback';
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
+if (googleClientId && googleClientSecret) {
+  passport.use(new GoogleStrategy({
+    clientID: googleClientId,
+    clientSecret: googleClientSecret,
+    callbackURL: googleCallbackUrl,
+  }, (_accessToken, _refreshToken, profile, done) => {
+    done(null, {
+      id: profile.id,
+      displayName: profile.displayName || '',
+      email: profile.emails?.[0]?.value || '',
+    });
+  }));
+
+  // GET /api/auth/google — redirect to Google
+  router.get('/google', passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    session: false,
+  }));
+
+  // GET /api/auth/google/callback — handle Google response
+  router.get('/google/callback',
+    passport.authenticate('google', { session: false, failureRedirect: `${clientUrl}/login?error=google_failed` }),
+    async (req: Request, res: Response) => {
+      try {
+        const googleProfile = req.user as { id: string; displayName: string; email: string };
+        const result = await AuthService.handleGoogleCallback(googleProfile);
+        // Redirect to client with token in URL fragment
+        res.redirect(`${clientUrl}/login?token=${result.token}&user=${encodeURIComponent(JSON.stringify(result.user))}`);
+      } catch (err) {
+        res.redirect(`${clientUrl}/login?error=auth_failed`);
+      }
+    }
+  );
+}
 
 router.post('/register', async (req: Request, res: Response) => {
   try {

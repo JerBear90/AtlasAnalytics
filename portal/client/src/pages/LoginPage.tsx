@@ -1,14 +1,37 @@
-import { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, FormEvent } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, setAuth } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Handle Google OAuth callback
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const userStr = searchParams.get('user');
+    const googleError = searchParams.get('error');
+
+    if (googleError) {
+      setError('Google sign-in failed. Please try again.');
+      return;
+    }
+
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setAuth(token, user);
+        navigate('/dashboard');
+      } catch {
+        setError('Failed to process Google sign-in.');
+      }
+    }
+  }, [searchParams, setAuth, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

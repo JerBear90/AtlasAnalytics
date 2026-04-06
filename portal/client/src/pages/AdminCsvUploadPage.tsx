@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import api from '../api/client';
-import { IngestionRecord } from '../types';
 
 interface UploadResult {
   filename: string;
@@ -19,15 +18,21 @@ export default function AdminCsvUploadPage() {
   const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState<UploadResult[]>([]);
   const [error, setError] = useState('');
-  const [history, setHistory] = useState<IngestionRecord[]>([]);
+  const [history, setHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const [historyError, setHistoryError] = useState('');
 
   const fetchHistory = async () => {
     setHistoryLoading(true);
+    setHistoryError('');
     try {
       const { data } = await api.get('/csv/history');
       setHistory(Array.isArray(data) ? data : []);
-    } catch { /* ignore */ }
+    } catch (err: any) {
+      setHistoryError(err.response?.data?.error || 'Failed to load history.');
+    }
     setHistoryLoading(false);
   };
 
@@ -137,6 +142,8 @@ export default function AdminCsvUploadPage() {
         </div>
         {historyLoading ? (
           <div className="p-6 text-center"><div className="animate-spin rounded-full h-6 w-6 border-t-2 border-[#6c5dd3] mx-auto"></div></div>
+        ) : historyError ? (
+          <div className="p-6 text-center text-[#dc3545] text-sm">{historyError}</div>
         ) : history.length === 0 ? (
           <div className="p-6 text-center text-[#a0a0b0] text-sm">No uploads yet.</div>
         ) : (
@@ -149,15 +156,44 @@ export default function AdminCsvUploadPage() {
               <th className="px-4 py-3 text-[#a0a0b0] font-medium text-xs uppercase tracking-[0.5px]">Invalid</th>
             </tr></thead>
             <tbody>
-              {history.map(h => (
-                <tr key={h.id} className="border-b border-[#2d2d44] last:border-0 hover:bg-[rgba(108,93,211,0.05)]">
-                  <td className="px-4 py-3 text-white">{h.filename}</td>
-                  <td className="px-4 py-3 text-white">{new Date(h.uploadedAt).toLocaleDateString()}</td>
-                  <td className="px-4 py-3 text-white">{h.totalRows}</td>
-                  <td className="px-4 py-3 text-[#198754]">{h.validRows}</td>
-                  <td className="px-4 py-3 text-[#dc3545]">{h.invalidRows}</td>
-                </tr>
-              ))}
+              {history.map((h: any) => {
+                const errors = (() => { try { return JSON.parse(h.errorDetails || '[]'); } catch { return []; } })();
+                const hasErrors = h.invalidRows > 0;
+                const isExpanded = expandedId === h.id;
+                return (
+                  <React.Fragment key={h.id}>
+                    <tr className={`border-b border-[#2d2d44] last:border-0 hover:bg-[rgba(108,93,211,0.05)] ${hasErrors ? 'cursor-pointer' : ''}`}
+                      onClick={() => hasErrors && setExpandedId(isExpanded ? null : h.id)}>
+                      <td className="px-4 py-3 text-white flex items-center gap-2">
+                        {hasErrors && <span className={`text-[10px] transition-transform ${isExpanded ? 'rotate-90' : ''}`}>▶</span>}
+                        {h.filename}
+                      </td>
+                      <td className="px-4 py-3 text-white">{new Date(h.uploadedAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-white">{h.totalRows}</td>
+                      <td className="px-4 py-3 text-[#198754]">{h.validRows}</td>
+                      <td className="px-4 py-3 text-[#dc3545]">{h.invalidRows}</td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-3 bg-[#181824]">
+                          {errors.length > 0 ? (
+                            <div className="max-h-48 overflow-y-auto space-y-1">
+                              <p className="text-xs text-[#a0a0b0] mb-2">{errors.length} validation error{errors.length !== 1 ? 's' : ''}:</p>
+                              {errors.map((e: any, i: number) => (
+                                <div key={i} className="text-xs text-[#dc3545]">
+                                  Row {e.row}, <span className="text-[#a0a0b0]">{e.column}</span>: {e.message} {e.value && <span className="text-[#a0a0b0]">(value: "{e.value}")</span>}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-[#a0a0b0]">{h.invalidRows} row{h.invalidRows !== 1 ? 's' : ''} skipped (empty or malformed rows from CSV export).</p>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         )}

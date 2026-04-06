@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
+import { useAuth } from '../context/AuthContext';
 import api from '../api/client';
 import { UserProfile, UserRole, UserType } from '../types';
 
@@ -7,11 +8,21 @@ const ROLES = [UserRole.RETAIL, UserRole.INSTITUTIONAL, UserRole.ENTERPRISE, Use
 const USER_TYPES = [UserType.RETAIL, UserType.ACADEMIC];
 
 export default function AdminUsersPage() {
+  const { user: currentUser } = useAuth();
+  const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+
+  // Invite state
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ name: '', email: '', role: 'retail', userType: 'retail' });
+  const [inviteResult, setInviteResult] = useState<{ email: string; tempPassword: string } | null>(null);
+  const [inviteError, setInviteError] = useState('');
+  const [inviteSaving, setInviteSaving] = useState(false);
+
   const [profileForm, setProfileForm] = useState({
     userType: '' as string,
     company: '',
@@ -84,7 +95,15 @@ export default function AdminUsersPage() {
         <div className="text-[#a0a0b0] text-sm">Admin &gt; User Management</div>
         <div className="flex items-center justify-between mt-1">
           <h1 className="text-2xl font-semibold text-white">User Management</h1>
-          <span className="text-sm text-[#a0a0b0]">{total} users</span>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-[#a0a0b0]">{total} users</span>
+            {isSuperAdmin && (
+              <button onClick={() => { setShowInvite(true); setInviteResult(null); setInviteError(''); setInviteForm({ name: '', email: '', role: 'retail', userType: 'retail' }); }}
+                className="px-4 py-2 bg-[#6c5dd3] hover:bg-[#6c5dd3]/90 text-white text-sm font-medium rounded-md transition cursor-pointer">
+                Invite User
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -142,6 +161,81 @@ export default function AdminUsersPage() {
           <span className="text-sm text-[#a0a0b0]">Page {page} of {totalPages}</span>
           <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
             className="px-3 py-1 bg-transparent border border-[#2d2d44] text-[#a0a0b0] rounded-md text-sm disabled:opacity-30 hover:text-[#6c5dd3] transition">Next</button>
+        </div>
+      )}
+
+      {/* Invite User Modal */}
+      {showInvite && (
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowInvite(false)}>
+          <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6 w-full max-w-md space-y-4 my-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Invite User</h2>
+              <button onClick={() => setShowInvite(false)} className="text-[#a0a0b0] hover:text-white text-lg cursor-pointer">✕</button>
+            </div>
+
+            {inviteResult ? (
+              <div className="space-y-3">
+                <div className="bg-[rgba(25,135,84,0.1)] border border-[#198754] rounded-lg p-4 text-sm text-[#198754]">
+                  <p className="font-medium mb-2">User created successfully</p>
+                  <p>Send these credentials to the user:</p>
+                </div>
+                <div className="bg-[#181824] rounded-lg p-4 space-y-2 text-sm">
+                  <div><span className="text-[#a0a0b0]">Email:</span> <span className="text-white">{inviteResult.email}</span></div>
+                  <div><span className="text-[#a0a0b0]">Temporary Password:</span> <span className="text-white font-mono">{inviteResult.tempPassword}</span></div>
+                </div>
+                <p className="text-xs text-[#a0a0b0]">The user should change their password after first login.</p>
+                <button onClick={() => { navigator.clipboard.writeText(`Email: ${inviteResult.email}\nPassword: ${inviteResult.tempPassword}`); }}
+                  className="px-4 py-2 bg-[#6c5dd3] hover:bg-[#6c5dd3]/90 text-white text-sm rounded-md transition cursor-pointer">
+                  Copy Credentials
+                </button>
+              </div>
+            ) : (
+              <>
+                {inviteError && <p className="text-sm text-[#dc3545]">{inviteError}</p>}
+                <div>
+                  <label className="block text-xs text-[#a0a0b0] mb-1">Full Name</label>
+                  <input value={inviteForm.name} onChange={e => setInviteForm(f => ({ ...f, name: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#181824] border border-[#2d2d44] rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#6c5dd3]" placeholder="Jane Doe" />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#a0a0b0] mb-1">Email</label>
+                  <input type="email" value={inviteForm.email} onChange={e => setInviteForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full px-3 py-2 bg-[#181824] border border-[#2d2d44] rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#6c5dd3]" placeholder="user@company.com" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-[#a0a0b0] mb-1">Role</label>
+                    <select value={inviteForm.role} onChange={e => setInviteForm(f => ({ ...f, role: e.target.value }))}
+                      className="w-full px-3 py-2 bg-[#181824] border border-[#2d2d44] rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-[#6c5dd3] cursor-pointer">
+                      {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-[#a0a0b0] mb-1">User Type</label>
+                    <select value={inviteForm.userType} onChange={e => setInviteForm(f => ({ ...f, userType: e.target.value }))}
+                      className="w-full px-3 py-2 bg-[#181824] border border-[#2d2d44] rounded-lg text-white text-sm focus:outline-none focus:ring-1 focus:ring-[#6c5dd3] cursor-pointer">
+                      {USER_TYPES.map(t => <option key={t} value={t}>{t === 'retail' ? 'Retail' : 'Academic'}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <button onClick={async () => {
+                  if (!inviteForm.name || !inviteForm.email) { setInviteError('Name and email are required.'); return; }
+                  setInviteSaving(true); setInviteError('');
+                  try {
+                    const { data } = await api.post('/users/invite', inviteForm);
+                    setInviteResult({ email: inviteForm.email, tempPassword: data.tempPassword });
+                    fetchUsers();
+                  } catch (err: any) {
+                    setInviteError(err.response?.data?.error || 'Failed to create invite.');
+                  }
+                  setInviteSaving(false);
+                }} disabled={inviteSaving}
+                  className="px-5 py-2.5 bg-[#6c5dd3] hover:bg-[#6c5dd3]/90 disabled:opacity-50 text-white text-sm font-medium rounded-md transition cursor-pointer">
+                  {inviteSaving ? 'Creating...' : 'Create & Generate Password'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       )}
 

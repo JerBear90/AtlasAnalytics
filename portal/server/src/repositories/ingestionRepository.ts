@@ -32,15 +32,16 @@ export const IngestionRepository = {
     };
   },
 
-  async list(page: number, pageSize: number): Promise<IngestionRecord[]> {
+  async list(page: number, pageSize: number): Promise<(IngestionRecord & { errorDetails?: string })[]> {
     const offset = (page - 1) * pageSize;
     const rows = db.prepare(
-      'SELECT id, filename, uploader_id, uploaded_at, total_rows, valid_rows, invalid_rows FROM csv_ingestions ORDER BY uploaded_at DESC LIMIT ? OFFSET ?'
+      'SELECT id, filename, uploader_id, uploaded_at, total_rows, valid_rows, invalid_rows, error_details FROM csv_ingestions ORDER BY uploaded_at DESC LIMIT ? OFFSET ?'
     ).all(pageSize, offset) as any[];
     return rows.map((r) => ({
       id: r.id, filename: r.filename, uploaderId: r.uploader_id,
       uploadedAt: new Date(r.uploaded_at), totalRows: r.total_rows,
       validRows: r.valid_rows, invalidRows: r.invalid_rows,
+      errorDetails: r.error_details || '[]',
     }));
   },
 

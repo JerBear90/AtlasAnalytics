@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { requireAdmin } from '../middleware/roleMiddleware';
+import { requireSuperAdmin } from '../middleware/roleMiddleware';
 import { UserRepository } from '../repositories/userRepository';
 import { AuthService, AuthError } from '../services/authService';
 import { UserRole, UserType } from '../types';
@@ -121,6 +124,43 @@ router.put('/:id/profile', requireAdmin, async (req: Request, res: Response) => 
       return;
     }
     res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// POST /api/users/invite (Super Admin only)
+router.post('/invite', requireSuperAdmin, async (req: Request, res: Response) => {
+  try {
+    const { name, email, role, userType } = req.body;
+    if (!name || !email) {
+      res.status(400).json({ error: 'Name and email are required.' });
+      return;
+    }
+    const existing = await UserRepository.findByEmail(email);
+    if (existing) {
+      res.status(409).json({ error: 'A user with this email already exists.' });
+      return;
+    }
+    const validRoles = Object.values(UserRole);
+    const assignedRole = role && validRoles.includes(role) ? role : UserRole.RETAIL;
+    const validTypes = Object.values(UserType);
+    const assignedType = userType && validTypes.includes(userType) ? userType : UserType.RETAIL;
+
+    // Generate temporary password
+    const tempPassword = crypto.randomBytes(6).toString('base64url');
+    const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+    const user = await UserRepository.create({ name, email, passwordHash, role: assignedRole });
+    if (assignedType !== UserType.RETAIL) {
+      await UserRepository.updateUserProfile(user.id, { userType: assignedType });
+    }
+
+    res.status(201).json({
+      user,
+      tempPassword,
+      message: `User created. Temporary password: ${tempPassword}`,
+    });
   } catch (err) {
     res.status(500).json({ error: 'Internal server error.' });
   }

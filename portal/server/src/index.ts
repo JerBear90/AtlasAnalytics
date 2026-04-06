@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
@@ -14,6 +16,28 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+// Security headers
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
+// Rate limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20, // stricter for auth endpoints
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts, please try again later.' },
+});
+
 // CORS — allow portal subdomain + WordPress site
 app.use(cors({
   origin: [
@@ -22,11 +46,15 @@ app.use(cors({
     'https://atlasanalytics.com',
     'https://www.atlasanalytics.com',
     'https://linen-shark-952965.hostingersite.com',
+    /\.up\.railway\.app$/,
   ],
   credentials: true,
 }));
 
 app.use(express.json({ limit: '10mb' }));
+
+// Disable X-Powered-By
+app.disable('x-powered-by');
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -34,12 +62,12 @@ app.get('/api/health', (_req, res) => {
 });
 
 // API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/csv', csvRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/export', exportRoutes);
-app.use('/api/settings', settingsRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/users', apiLimiter, userRoutes);
+app.use('/api/csv', apiLimiter, csvRoutes);
+app.use('/api/dashboard', apiLimiter, dashboardRoutes);
+app.use('/api/export', apiLimiter, exportRoutes);
+app.use('/api/settings', apiLimiter, settingsRoutes);
 
 // Centralized error handler
 app.use(errorHandler);

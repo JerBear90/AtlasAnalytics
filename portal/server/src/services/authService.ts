@@ -92,8 +92,9 @@ export const AuthService = {
     await PasswordResetRepository.create(user.id, hashToken(resetToken), expiresAt);
 
     // In production, send email via SendGrid here
-    // For now, log the token (remove in production)
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Password reset token for ${email}: ${resetToken}`);
+    }
   },
 
   async resetPassword(resetToken: string, newPassword: string): Promise<void> {

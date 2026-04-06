@@ -22,7 +22,7 @@ if (googleClientId && googleClientSecret) {
       id: profile.id,
       displayName: profile.displayName || '',
       email: profile.emails?.[0]?.value || '',
-    });
+    } as any);
   }));
 
   // GET /api/auth/google — redirect to Google
@@ -36,7 +36,7 @@ if (googleClientId && googleClientSecret) {
     passport.authenticate('google', { session: false, failureRedirect: `${clientUrl}/login?error=google_failed` }),
     async (req: Request, res: Response) => {
       try {
-        const googleProfile = req.user as { id: string; displayName: string; email: string };
+        const googleProfile = req.user as unknown as { id: string; displayName: string; email: string };
         const result = await AuthService.handleGoogleCallback(googleProfile);
         // Redirect to client with token in URL fragment
         res.redirect(`${clientUrl}/login?token=${result.token}&user=${encodeURIComponent(JSON.stringify(result.user))}`);

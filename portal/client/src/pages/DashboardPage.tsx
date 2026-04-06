@@ -13,7 +13,6 @@ import { DashboardData, FilterOptions, DashboardFilters, UserType, UserRole } fr
 export default function DashboardPage() {
   const { user } = useAuth();
   const { viewAsType } = useViewAs();
-  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
   const isAcademic = isSuperAdmin ? viewAsType === UserType.ACADEMIC : user?.userType === UserType.ACADEMIC;
   const [activeTab, setActiveTab] = useState('overview');
@@ -265,8 +264,6 @@ export default function DashboardPage() {
         };
         const handleDragEnd = () => setDragIdx(null);
 
-        const colors = ['#6c5dd3', '#198754', '#fd7e14', '#dc3545', '#0dcaf0', '#ffd60a'];
-
         if (available.length === 0) {
           return (
             <div className="text-center py-20 text-[#a0a0b0]">
@@ -278,7 +275,8 @@ export default function DashboardPage() {
 
         return (
           <>
-            <p className="text-xs text-[#a0a0b0]">Drag charts to rearrange. Layout is saved automatically.</p>
+            <p className="text-xs text-[#a0a0b0] hidden sm:block">Drag charts to rearrange. Layout is saved automatically.</p>
+            <p className="text-xs text-[#a0a0b0] sm:hidden">Tap and hold to rearrange charts.</p>
             <div className="grid grid-cols-2 gap-5 max-lg:grid-cols-1">
               {orderedCharts.map((chart: any, idx: number) => (
                 <div key={chart.id} draggable onDragStart={() => handleDragStart(idx)} onDragOver={(e) => handleDragOver(e, idx)} onDragEnd={handleDragEnd}
@@ -527,7 +525,7 @@ export default function DashboardPage() {
           <>
             {/* Inline Filters */}
             {filterConfig.length > 0 && (
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-3">
                 {filterConfig.map(fc => (
                   <div key={fc.key} className="flex items-center gap-1.5">
                     <span className="text-xs text-[#a0a0b0]">{fc.label}:</span>
@@ -540,7 +538,7 @@ export default function DashboardPage() {
                 {Object.values(tabFilters).some(v => v) && (
                   <button onClick={() => { resetTabFilters(); setTablePage(1); }} className="text-xs text-[#6c5dd3] hover:text-white transition cursor-pointer">Clear filters</button>
                 )}
-                <span className="text-xs text-[#a0a0b0] ml-auto">{totalRows} of {clientData.rows.length} records</span>
+                <span className="text-xs text-[#a0a0b0] sm:ml-auto">{totalRows} of {clientData.rows.length} records</span>
               </div>
             )}
 

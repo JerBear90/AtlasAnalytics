@@ -147,8 +147,8 @@ export default function AdminUsersPage() {
 
       {/* Profile Editor Modal */}
       {editingUser && (
-        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4" onClick={() => setEditingUser(null)}>
-          <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6 w-full max-w-lg space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 overflow-y-auto" onClick={() => setEditingUser(null)}>
+          <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6 w-full max-w-lg space-y-4 my-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">Edit Profile — {editingUser.name}</h2>
               <button onClick={() => setEditingUser(null)} className="text-[#a0a0b0] hover:text-white text-lg cursor-pointer">✕</button>

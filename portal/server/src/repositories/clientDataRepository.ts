@@ -66,6 +66,16 @@ export interface PiResultRow {
 }
 
 export const ClientDataRepository = {
+  clearTable(table: string): void {
+    const allowed = ['quarterly_time_series', 'weekly_time_series', 'weekly_financial_targets', 'nx_results', 'pi_results', 'academic_gdp'];
+    if (!allowed.includes(table)) return;
+    db.prepare(`DELETE FROM ${table}`).run();
+  },
+
+  clearAcademicGdpByType(gdpType: string): void {
+    db.prepare('DELETE FROM academic_gdp WHERE gdp_type = ?').run(gdpType);
+  },
+
   bulkInsertAcademicGdp(ingestionId: string, rows: Omit<AcademicGdpRow, 'id'>[]): number {
     const insert = db.prepare(
       `INSERT INTO academic_gdp (id, ingestion_id, gdp_type, date, year, quarter, date2, bea_actual, atlas_predicted)

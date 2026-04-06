@@ -21,6 +21,7 @@ export default function AdminCsvUploadPage() {
   const [history, setHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [replaceMode, setReplaceMode] = useState(false);
 
   const [historyError, setHistoryError] = useState('');
 
@@ -55,6 +56,7 @@ export default function AdminCsvUploadPage() {
       if (selectedFiles.length === 1) {
         const form = new FormData();
         form.append('file', selectedFiles[0]);
+        if (replaceMode) form.append('replace', 'true');
         const { data } = await api.post('/csv/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
         setResults([{ filename: selectedFiles[0].name, ...data }]);
       } else {
@@ -62,6 +64,7 @@ export default function AdminCsvUploadPage() {
         for (const file of selectedFiles) {
           form.append('files', file);
         }
+        if (replaceMode) form.append('replace', 'true');
         const { data } = await api.post('/csv/upload-multiple', form, { headers: { 'Content-Type': 'multipart/form-data' } });
         setResults(data.results || []);
       }
@@ -93,6 +96,33 @@ export default function AdminCsvUploadPage() {
             className="px-5 py-2.5 bg-[#6c5dd3] hover:bg-[#6c5dd3]/90 disabled:opacity-50 text-white text-sm font-medium rounded-md transition whitespace-nowrap cursor-pointer">
             {uploading ? 'Uploading...' : `Upload & Process${selectedFiles.length > 1 ? ` (${selectedFiles.length} files)` : ''}`}
           </button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={replaceMode} onChange={e => setReplaceMode(e.target.checked)}
+              className="w-4 h-4 rounded border-[#2d2d44] bg-[#181824] text-[#6c5dd3] focus:ring-[#6c5dd3] cursor-pointer" />
+            <span className="text-sm text-[#a0a0b0]">Replace existing data</span>
+          </label>
+          <span className="text-xs text-[#a0a0b0]">
+            {replaceMode ? '⚠ Old data for this file type will be deleted before importing' : 'New rows will be appended to existing data'}
+          </span>
+        </div>
+
+        <div className="bg-[#181824] rounded-lg p-4 text-xs text-[#a0a0b0] space-y-2">
+          <p className="text-sm text-white font-medium">How CSV Upload Works</p>
+          <p>The system auto-detects the file type based on column headers. Supported formats:</p>
+          <ul className="list-disc list-inside space-y-1 ml-2">
+            <li>Quarterly Time Series — columns: Date, Year, Quarter, Date2, US GDP (SAAR), Atlas Predicted (SAAR)</li>
+            <li>Weekly Time Series — columns: Prediction Year-Quarter, Date, Year, Day of the Week, Month, Core GDP, etc.</li>
+            <li>Weekly Financial Targets — contains "Atlas Analytics Price Targets" header</li>
+            <li>NX Results — columns: Date, Year, Quarter, Date2, Trade Balance, Trade Balance (% Ch), NX Results</li>
+            <li>PI Results — columns: Date, Year, Quarter, Date2, Private Inventories</li>
+            <li>Academic GDP (Headline/Core/State) — columns: Date, Year, Quarter, Date 2, BEA Actual, Atlas Predictions (type detected from filename)</li>
+          </ul>
+          <p className="pt-1">To update data: upload the new CSV with "Replace existing data" checked. This clears the old data for that file type and imports the new file.</p>
+          <p>To add data: upload without "Replace" checked. New rows are appended.</p>
+          <p>CSVs with unrecognized columns will be rejected. Empty trailing rows from Excel exports are automatically skipped.</p>
         </div>
 
         {selectedFiles.length > 0 && (

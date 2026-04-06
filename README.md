@@ -147,6 +147,21 @@ The pipeline auto-detects these formats on upload:
 | Academic GDP (Headline/Core/State) | `BEA Actual`, `Atlas Predictions` (type from filename) |
 | Generic Economic Data | `country_code`, `indicator_type`, `quarter`, `value` |
 
+### Updating Data
+
+There are two upload modes:
+
+- Append (default): New rows are added alongside existing data. Use this when adding new time periods.
+- Replace: Old data for the detected file type is cleared before importing. Use this when re-uploading a corrected or updated file.
+
+To replace data, check "Replace existing data" on the CSV Upload page before uploading.
+
+### Notes
+- CSVs with unrecognized column headers will be rejected
+- Empty trailing rows from Excel exports are automatically skipped (shown as "invalid" in upload history)
+- Academic GDP type (Headline/Core/State) is detected from the filename — include "Core", "Nevada", or "State" in the filename
+- Financial Targets use a special format with section headers — export directly from the Excel template
+
 ## License
 
 Proprietary — Atlas Analytics, Inc.

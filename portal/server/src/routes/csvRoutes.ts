@@ -12,17 +12,20 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 router.use(authMiddleware);
 router.use(requireSuperAdmin);
 
-// POST /api/csv/upload (single file - kept for backward compatibility)
+// POST /api/csv/upload (single file)
 router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       res.status(400).json({ error: 'CSV file is required.' });
       return;
     }
+    const replace = req.body.replace === 'true' || req.body.replace === true;
     const result = await CSVPipelineService.ingestCSV(
       req.file.buffer,
       req.file.originalname,
-      req.user!.id
+      req.user!.id,
+      undefined,
+      replace
     );
     res.status(result.success ? 200 : 207).json(result);
   } catch (err) {
@@ -42,10 +45,11 @@ router.post('/upload-multiple', upload.array('files', 20), async (req: Request, 
       res.status(400).json({ error: 'At least one CSV file is required.' });
       return;
     }
+    const replace = req.body.replace === 'true' || req.body.replace === true;
     const results = [];
     for (const file of files) {
       try {
-        const result = await CSVPipelineService.ingestCSV(file.buffer, file.originalname, req.user!.id);
+        const result = await CSVPipelineService.ingestCSV(file.buffer, file.originalname, req.user!.id, undefined, replace);
         results.push({ filename: file.originalname, ...result });
       } catch (err) {
         results.push({

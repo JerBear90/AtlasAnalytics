@@ -130,7 +130,8 @@ export const CSVPipelineService = {
     file: Buffer,
     filename: string,
     uploaderId: string,
-    schema: CSVSchema = DEFAULT_SCHEMA
+    schema: CSVSchema = DEFAULT_SCHEMA,
+    replace: boolean = false
   ): Promise<IngestionResult> {
     const content = file.toString('utf-8').trim();
 
@@ -140,6 +141,7 @@ export const CSVPipelineService = {
 
     // Check for financial targets (special format with empty rows and sections)
     if (detectFinancialTargets(content)) {
+      if (replace) ClientDataRepository.clearTable('weekly_financial_targets');
       return this.ingestFinancialTargets(content, filename, uploaderId);
     }
 
@@ -172,6 +174,25 @@ export const CSVPipelineService = {
 
     const headerKeys = Object.keys(rows[0]);
     const fileType = detectFileType(headerKeys);
+
+    // Clear old data if replace mode
+    if (replace) {
+      const clearMap: Record<string, string> = {
+        weekly_time_series: 'weekly_time_series',
+        quarterly_time_series: 'quarterly_time_series',
+        nx_results: 'nx_results',
+        pi_results: 'pi_results',
+      };
+      if (clearMap[fileType]) {
+        ClientDataRepository.clearTable(clearMap[fileType]);
+      }
+      if (fileType === 'academic_gdp') {
+        const lowerName = filename.toLowerCase();
+        if (lowerName.includes('core')) ClientDataRepository.clearAcademicGdpByType('core');
+        else if (lowerName.includes('nevada') || lowerName.includes('state')) ClientDataRepository.clearAcademicGdpByType('state');
+        else ClientDataRepository.clearAcademicGdpByType('headline');
+      }
+    }
 
     switch (fileType) {
       case 'weekly_time_series':

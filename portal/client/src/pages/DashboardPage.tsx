@@ -453,6 +453,94 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Tab Charts */}
+      {isClientTab && !clientLoading && clientData && clientData.rows.length > 0 && activeTab !== 'overview' && (() => {
+        // Build chart data based on active tab
+        const buildTabChart = () => {
+          const rows = clientData.rows;
+          if (activeTab === 'quarterly') {
+            // Line chart: US GDP vs Atlas Predicted over time
+            const recent = rows.slice(0, 30).reverse();
+            return {
+              type: 'line' as const,
+              dataset: {
+                label: 'US GDP (SAAR) vs Atlas Predicted',
+                type: 'line' as const,
+                labels: recent.map(r => String(r[3])), // Date2
+                data: recent.map(r => parseFloat(String(r[4])) || 0), // US GDP
+              },
+            };
+          }
+          if (activeTab === 'weekly') {
+            const recent = rows.slice(0, 30).reverse();
+            return {
+              type: 'line' as const,
+              dataset: {
+                label: 'Weekly GDP Forecast',
+                type: 'line' as const,
+                labels: recent.map(r => String(r[1])), // Date
+                data: recent.map(r => parseFloat(String(r[9])) || 0), // GDP
+              },
+            };
+          }
+          if (activeTab === 'financial') {
+            return {
+              type: 'bar' as const,
+              dataset: {
+                label: 'Target vs Current Price',
+                type: 'bar' as const,
+                labels: rows.map(r => String(r[1])), // ETF
+                data: rows.map(r => parseFloat(String(r[2]).replace('$', '')) || 0), // Target Price
+              },
+            };
+          }
+          if (activeTab === 'exports') {
+            const recent = rows.slice(0, 20).reverse();
+            return {
+              type: 'bar' as const,
+              dataset: {
+                label: 'Trade Balance',
+                type: 'bar' as const,
+                labels: recent.map(r => String(r[3])), // Date2
+                data: recent.map(r => parseFloat(String(r[4]).replace(/,/g, '')) || 0), // Trade Balance
+              },
+            };
+          }
+          if (activeTab === 'inventories') {
+            const recent = rows.slice(0, 20).reverse();
+            return {
+              type: 'bar' as const,
+              dataset: {
+                label: 'Private Inventories',
+                type: 'bar' as const,
+                labels: recent.map(r => String(r[3])), // Date2
+                data: recent.map(r => parseFloat(String(r[4])) || 0), // Private Inventories
+              },
+            };
+          }
+          if (['headline_gdp', 'core_gdp', 'state_gdp'].includes(activeTab)) {
+            const recent = rows.slice(0, 20).reverse();
+            return {
+              type: 'line' as const,
+              dataset: {
+                label: 'BEA Actual vs Atlas Predictions',
+                type: 'line' as const,
+                labels: recent.map(r => String(r[3])), // Date 2
+                data: recent.map(r => parseFloat(String(r[4])) || 0), // BEA Actual
+              },
+            };
+          }
+          return null;
+        };
+
+        const chart = buildTabChart();
+        if (!chart) return null;
+
+        return chart.type === 'line'
+          ? <LineChart dataset={chart.dataset} />
+          : <BarChart dataset={chart.dataset} />;
+      })()}
+
       {/* Client Product Data Tables (retail tabs) */}
       {isClientTab && clientLoading && (
         <div className="flex justify-center py-20">

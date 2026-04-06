@@ -27,6 +27,12 @@ const ROLE_SCOPES: Record<UserRole, DataScope> = {
     components: 'custom',
     exportFormats: ['csv', 'json', 'all'],
   },
+  [UserRole.SUPER_ADMIN]: {
+    timeRange: 'full_history',
+    countries: 'all_38',
+    components: 'custom',
+    exportFormats: ['csv', 'json', 'all'],
+  },
 };
 
 export function getDataScope(role: UserRole): DataScope {
@@ -67,7 +73,7 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
 
-  if (req.user.role !== UserRole.ADMIN) {
+  if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.SUPER_ADMIN) {
     res.status(403).json({ error: 'Admin access required.' });
     return;
   }

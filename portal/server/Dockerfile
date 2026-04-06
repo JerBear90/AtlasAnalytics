@@ -12,5 +12,10 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY src/db/migrations ./dist/db/migrations
+
+# Create data directory for SQLite
+RUN mkdir -p /app/data
+
 EXPOSE 4000
+ENV DATABASE_PATH=/app/data/portal.db
 CMD ["node", "dist/index.js"]

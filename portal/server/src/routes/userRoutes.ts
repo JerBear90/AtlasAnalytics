@@ -3,7 +3,7 @@ import { authMiddleware } from '../middleware/authMiddleware';
 import { requireAdmin } from '../middleware/roleMiddleware';
 import { UserRepository } from '../repositories/userRepository';
 import { AuthService, AuthError } from '../services/authService';
-import { UserRole } from '../types';
+import { UserRole, UserType } from '../types';
 
 const router = Router();
 
@@ -34,6 +34,19 @@ router.put('/me', async (req: Request, res: Response) => {
       return;
     }
     const updated = await UserRepository.updateProfile(req.user!.id, { name: name.trim() });
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// PUT /api/users/me/profile
+router.put('/me/profile', async (req: Request, res: Response) => {
+  try {
+    const { company, subscriber, primaryContact, servicePeriodStart, servicePeriodEnd, workbookDescription } = req.body;
+    const updated = await UserRepository.updateUserProfile(req.user!.id, {
+      company, subscriber, primaryContact, servicePeriodStart, servicePeriodEnd, workbookDescription,
+    });
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: 'Internal server error.' });
@@ -81,6 +94,28 @@ router.put('/:id/role', requireAdmin, async (req: Request, res: Response) => {
       return;
     }
     const updated = await UserRepository.updateRole(req.params.id, role);
+    if (!updated) {
+      res.status(404).json({ error: 'User not found.' });
+      return;
+    }
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// PUT /api/users/:id/profile (Admin only)
+router.put('/:id/profile', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { userType, company, subscriber, primaryContact, servicePeriodStart, servicePeriodEnd, workbookDescription } = req.body;
+    const validTypes = Object.values(UserType);
+    if (userType && !validTypes.includes(userType)) {
+      res.status(400).json({ error: `userType must be one of: ${validTypes.join(', ')}` });
+      return;
+    }
+    const updated = await UserRepository.updateUserProfile(req.params.id, {
+      userType, company, subscriber, primaryContact, servicePeriodStart, servicePeriodEnd, workbookDescription,
+    });
     if (!updated) {
       res.status(404).json({ error: 'User not found.' });
       return;

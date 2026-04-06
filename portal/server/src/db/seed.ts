@@ -23,6 +23,24 @@ async function seed() {
     console.log('Admin user already exists.');
   }
 
+  // Create super admin: super@atlas.com / super123
+  const superPw = await bcrypt.hash('super123', SALT_ROUNDS);
+  const superId = crypto.randomBytes(16).toString('hex');
+  const existingSuper = db.prepare('SELECT id FROM users WHERE email = ?').get('super@atlas.com');
+  if (!existingSuper) {
+    db.prepare(
+      `INSERT INTO users (id, name, email, password_hash, role, user_type, company, subscriber, primary_contact, service_period_start, service_period_end, workbook_description, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(superId, 'Super Admin', 'super@atlas.com', superPw, 'super_admin', 'retail',
+      'Atlas Analytics, Inc.', 'Internal Testing', 'jake@atlasanalytics.com',
+      '2026-01-01', '2026-09-30',
+      'This workbook contains a collection of key economic and financial datasets compiled by Atlas Analytics, Inc. for internal analysis and strategic planning purposes.',
+      now, now);
+    console.log('Created super admin: super@atlas.com / super123');
+  } else {
+    console.log('Super admin already exists.');
+  }
+
   // Create demo retail user: demo@atlas.com / demo1234
   const demoPw = await bcrypt.hash('demo1234', SALT_ROUNDS);
   const demoId = crypto.randomBytes(16).toString('hex');
@@ -33,48 +51,6 @@ async function seed() {
        VALUES (?, ?, ?, ?, ?, ?, ?)`
     ).run(demoId, 'Demo User', 'demo@atlas.com', demoPw, 'retail', now, now);
     console.log('Created demo user: demo@atlas.com / demo1234');
-  }
-
-  // Seed sample economic data
-  const dataCount = db.prepare('SELECT COUNT(*) as count FROM economic_data').get() as { count: number };
-  if (dataCount.count === 0) {
-    const uploaderId = (existing as any)?.id || adminId;
-    const ingestionId = crypto.randomBytes(16).toString('hex');
-    db.prepare(
-      `INSERT INTO csv_ingestions (id, filename, uploader_id, total_rows, valid_rows, invalid_rows, error_details)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).run(ingestionId, 'seed_data.csv', uploaderId, 60, 60, 0, '[]');
-
-    const countries = ['US', 'GB', 'DE', 'JP', 'CN', 'FR', 'CA', 'AU', 'IN', 'BR'];
-    const indicators = ['gdp_nowcast', 'trade_flow', 'consumer_spending'];
-    const quarters = ['Q1 2025', 'Q2 2025', 'Q3 2025', 'Q4 2025', 'Q1 2026'];
-
-    const insert = db.prepare(
-      `INSERT INTO economic_data (id, ingestion_id, country_code, indicator_type, quarter, observation_date, value, metadata)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-    );
-
-    const tx = db.transaction(() => {
-      for (const country of countries) {
-        for (const indicator of indicators) {
-          for (let qi = 0; qi < quarters.length; qi++) {
-            const id = crypto.randomBytes(16).toString('hex');
-            const baseValue = indicator === 'gdp_nowcast' ? 2.0 + Math.random() * 4 :
-                              indicator === 'trade_flow' ? 50 + Math.random() * 100 :
-                              30 + Math.random() * 70;
-            const value = Math.round(baseValue * 100) / 100;
-            const month = (qi * 3 + 1).toString().padStart(2, '0');
-            const year = quarters[qi].includes('2026') ? '2026' : '2025';
-            const obsDate = `${year}-${month}-15`;
-            insert.run(id, ingestionId, country, indicator, quarters[qi], obsDate, value, '{}');
-          }
-        }
-      }
-    });
-    tx();
-    console.log('Seeded 150 economic data records across 10 countries, 3 indicators, 5 quarters.');
-  } else {
-    console.log(`Economic data already exists (${dataCount.count} records).`);
   }
 
   console.log('Seed complete.');

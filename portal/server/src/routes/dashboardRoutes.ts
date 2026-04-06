@@ -1,12 +1,50 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { DashboardDataService } from '../services/dashboardDataService';
+import { ClientDataRepository } from '../repositories/clientDataRepository';
 import { DashboardFilters } from '../types';
 
 const router = Router();
 
 // All dashboard routes require authentication
 router.use(authMiddleware);
+
+// GET /api/dashboard/client-data/:tab
+router.get('/client-data/:tab', async (req: Request, res: Response) => {
+  try {
+    const { tab } = req.params;
+    const quarter = req.query.quarter as string | undefined;
+
+    switch (tab) {
+      case 'weekly': {
+        const rows = ClientDataRepository.getWeeklyTimeSeries(quarter);
+        const quarters = ClientDataRepository.getWeeklyTimeSeriesQuarters();
+        res.json({ rows, quarters });
+        return;
+      }
+      case 'financial': {
+        const rows = ClientDataRepository.getFinancialTargets();
+        res.json({ rows });
+        return;
+      }
+      case 'nx': {
+        const rows = ClientDataRepository.getNxResults();
+        res.json({ rows });
+        return;
+      }
+      case 'pi': {
+        const rows = ClientDataRepository.getPiResults();
+        res.json({ rows });
+        return;
+      }
+      default:
+        res.status(400).json({ error: 'Unknown tab: ' + tab });
+    }
+  } catch (err) {
+    console.error('[Dashboard /client-data error]', err);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
 
 // GET /api/dashboard/data
 router.get('/data', async (req: Request, res: Response) => {

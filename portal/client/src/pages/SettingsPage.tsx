@@ -17,8 +17,21 @@ export default function SettingsPage() {
   const [pwError, setPwError] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
 
+  // Profile fields
+  const [profileEditing, setProfileEditing] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    company: user?.company || '',
+    subscriber: user?.subscriber || '',
+    primaryContact: user?.primaryContact || '',
+    servicePeriodStart: user?.servicePeriodStart || '',
+    servicePeriodEnd: user?.servicePeriodEnd || '',
+    workbookDescription: user?.workbookDescription || '',
+  });
+  const [profileMsg, setProfileMsg] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+
   // SSO state (admin only)
-  const isAdmin = user?.role === UserRole.ADMIN;
+  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
   const [googleClientId, setGoogleClientId] = useState('');
   const [googleClientSecret, setGoogleClientSecret] = useState('');
   const [googleCallbackUrl, setGoogleCallbackUrl] = useState('');
@@ -87,6 +100,22 @@ export default function SettingsPage() {
     }
   };
 
+  const handleProfileSave = async (e: FormEvent) => {
+    e.preventDefault();
+    setProfileMsg('');
+    setProfileLoading(true);
+    try {
+      const { data } = await api.put('/users/me/profile', profileForm);
+      setAuth(localStorage.getItem('atlas_token')!, { ...user!, ...data });
+      setProfileMsg('Profile updated.');
+      setProfileEditing(false);
+    } catch {
+      setProfileMsg('Failed to update profile.');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   const inputClass = 'w-full px-4 py-3 bg-[#181824] border border-[#2d2d44] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#6c5dd3] focus:border-transparent';
 
   return (
@@ -97,12 +126,77 @@ export default function SettingsPage() {
           <h1 className="text-2xl font-semibold text-white mt-1">Account Settings</h1>
         </div>
 
-        <div className="bg-[#1e1e2f] rounded-xl p-6 border border-[#2d2d44] space-y-3">
-          <h2 className="text-base font-semibold text-white">Profile</h2>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><span className="text-[#a0a0b0]">Email</span><p className="text-white mt-1">{user?.email}</p></div>
-            <div><span className="text-[#a0a0b0]">Role</span><p className="text-white mt-1 capitalize">{user?.role}</p></div>
+        {/* Profile Section */}
+        <div className="bg-[#1e1e2f] rounded-xl p-6 border border-[#2d2d44] space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-white">Profile</h2>
+            {!profileEditing && (
+              <button onClick={() => { setProfileEditing(true); setProfileMsg(''); }}
+                className="text-xs text-[#6c5dd3] hover:text-white transition cursor-pointer">
+                Edit
+              </button>
+            )}
           </div>
+          {profileMsg && <p className={`text-sm ${profileMsg.includes('Failed') ? 'text-[#dc3545]' : 'text-[#198754]'}`}>{profileMsg}</p>}
+
+          {!profileEditing ? (
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><span className="text-[#a0a0b0]">Email</span><p className="text-white mt-1">{user?.email}</p></div>
+              <div><span className="text-[#a0a0b0]">Role</span><p className="text-white mt-1 capitalize">{user?.role}</p></div>
+              <div><span className="text-[#a0a0b0]">User Type</span><p className="text-white mt-1 capitalize">{user?.userType || 'retail'}</p></div>
+              <div><span className="text-[#a0a0b0]">Company</span><p className="text-white mt-1">{user?.company || '—'}</p></div>
+              <div><span className="text-[#a0a0b0]">Subscriber</span><p className="text-white mt-1">{user?.subscriber || '—'}</p></div>
+              <div><span className="text-[#a0a0b0]">Primary Contact</span><p className="text-white mt-1">{user?.primaryContact || '—'}</p></div>
+              <div className="col-span-2"><span className="text-[#a0a0b0]">Service Period</span><p className="text-white mt-1">{user?.servicePeriodStart && user?.servicePeriodEnd ? `${user.servicePeriodStart} – ${user.servicePeriodEnd}` : '—'}</p></div>
+              {user?.workbookDescription && (
+                <div className="col-span-2"><span className="text-[#a0a0b0]">Workbook Description</span><p className="text-white mt-1 leading-relaxed">{user.workbookDescription}</p></div>
+              )}
+            </div>
+          ) : (
+            <form onSubmit={handleProfileSave} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div><span className="text-[#a0a0b0]">Email</span><p className="text-white mt-1">{user?.email}</p></div>
+                <div><span className="text-[#a0a0b0]">Role</span><p className="text-white mt-1 capitalize">{user?.role}</p></div>
+              </div>
+              <div>
+                <label className="block text-xs text-[#a0a0b0] mb-1">Company</label>
+                <input value={profileForm.company} onChange={e => setProfileForm(f => ({ ...f, company: e.target.value }))} className={inputClass} placeholder="Atlas Analytics, Inc." />
+              </div>
+              <div>
+                <label className="block text-xs text-[#a0a0b0] mb-1">Subscriber</label>
+                <input value={profileForm.subscriber} onChange={e => setProfileForm(f => ({ ...f, subscriber: e.target.value }))} className={inputClass} placeholder="Client name or organization" />
+              </div>
+              <div>
+                <label className="block text-xs text-[#a0a0b0] mb-1">Primary Account Contact</label>
+                <input value={profileForm.primaryContact} onChange={e => setProfileForm(f => ({ ...f, primaryContact: e.target.value }))} className={inputClass} placeholder="contact@example.com" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-[#a0a0b0] mb-1">Service Period Start</label>
+                  <input type="date" value={profileForm.servicePeriodStart} onChange={e => setProfileForm(f => ({ ...f, servicePeriodStart: e.target.value }))} className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-xs text-[#a0a0b0] mb-1">Service Period End</label>
+                  <input type="date" value={profileForm.servicePeriodEnd} onChange={e => setProfileForm(f => ({ ...f, servicePeriodEnd: e.target.value }))} className={inputClass} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-[#a0a0b0] mb-1">Workbook Description</label>
+                <textarea value={profileForm.workbookDescription} onChange={e => setProfileForm(f => ({ ...f, workbookDescription: e.target.value }))}
+                  className={inputClass + ' h-20 resize-none'} placeholder="Description of the workbook contents..." />
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" disabled={profileLoading}
+                  className="px-5 py-2.5 bg-[#6c5dd3] hover:bg-[#6c5dd3]/90 disabled:opacity-50 text-white text-sm font-medium rounded-md transition cursor-pointer">
+                  {profileLoading ? 'Saving...' : 'Save Profile'}
+                </button>
+                <button type="button" onClick={() => { setProfileEditing(false); setProfileForm({ company: user?.company || '', subscriber: user?.subscriber || '', primaryContact: user?.primaryContact || '', servicePeriodStart: user?.servicePeriodStart || '', servicePeriodEnd: user?.servicePeriodEnd || '', workbookDescription: user?.workbookDescription || '' }); }}
+                  className="px-5 py-2.5 bg-transparent border border-[#2d2d44] text-[#a0a0b0] text-sm rounded-md hover:text-white transition cursor-pointer">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
         </div>
 
         <form onSubmit={handleNameUpdate} className="bg-[#1e1e2f] rounded-xl p-6 border border-[#2d2d44] space-y-4">

@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserRole, FilterOptions, DashboardFilters } from '../types';
+import { useViewAs } from '../context/ViewAsContext';
+import { UserRole, UserType, FilterOptions, DashboardFilters } from '../types';
 import { useState } from 'react';
 
 interface SidebarProps {
@@ -14,15 +15,27 @@ interface SidebarProps {
   showDashboardNav?: boolean;
 }
 
-const DATA_SERIES_TABS = [
+const RETAIL_DATA_TABS = [
   { id: 'quarterly', label: 'Quarterly Time Series' },
   { id: 'weekly', label: 'Weekly Time Series' },
   { id: 'financial', label: 'Financial Targets' },
 ];
 
-const COMPONENT_TABS = [
+const RETAIL_COMPONENT_TABS = [
   { id: 'exports', label: 'Net Exports' },
   { id: 'inventories', label: 'Private Inventories' },
+];
+
+const ACADEMIC_DATA_TABS = [
+  { id: 'headline_gdp', label: 'Headline GDP' },
+  { id: 'core_gdp', label: 'Core GDP' },
+  { id: 'state_gdp', label: 'State GDP' },
+];
+
+const PORTAL_TABS = [
+  { id: 'contents', label: 'Contents' },
+  { id: 'insights', label: 'Insights' },
+  { id: 'support', label: 'Support' },
 ];
 
 export default function Sidebar({
@@ -30,8 +43,11 @@ export default function Sidebar({
   filterOptions, filters, onFiltersChange, showDashboardNav = false,
 }: SidebarProps) {
   const { user, logout } = useAuth();
+  const { viewAsType, setViewAsType } = useViewAs();
   const location = useLocation();
-  const isAdmin = user?.role === UserRole.ADMIN;
+  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  const isAcademic = isSuperAdmin ? viewAsType === UserType.ACADEMIC : user?.userType === UserType.ACADEMIC;
   const isDashboard = location.pathname === '/dashboard';
 
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
@@ -108,22 +124,56 @@ export default function Sidebar({
         ${open ? 'translate-x-0' : '-translate-x-full'}
       `}>
         {/* Brand */}
-        <div className="flex items-center gap-3 mb-10 pb-5 border-b border-[#2d2d44]">
+        <div className="flex items-center gap-3 mb-5 pb-5 border-b border-[#2d2d44]">
           <img src="https://atlasanalytics.com/wp-content/uploads/2025/01/Group-30.png" alt="Atlas Analytics" className="h-10 w-auto" />
           <span className="text-base font-bold text-white leading-tight">Atlas Analytics Inc.</span>
         </div>
+
+        {/* View As Toggle — Super Admin only */}
+        {isSuperAdmin && (
+          <div className="mb-6 pb-5 border-b border-[#2d2d44]">
+            <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">View As</div>
+            <div className="flex bg-[#13131a] rounded-lg p-1 gap-1">
+              <button
+                onClick={() => { setViewAsType(UserType.RETAIL); onTabChange?.('quarterly'); }}
+                className={`flex-1 text-xs py-2 px-3 rounded-md font-medium transition cursor-pointer ${
+                  viewAsType === UserType.RETAIL
+                    ? 'bg-[#6c5dd3] text-white shadow-sm'
+                    : 'text-[#a0a0b0] hover:text-white'
+                }`}>
+                Retail
+              </button>
+              <button
+                onClick={() => { setViewAsType(UserType.ACADEMIC); onTabChange?.('headline_gdp'); }}
+                className={`flex-1 text-xs py-2 px-3 rounded-md font-medium transition cursor-pointer ${
+                  viewAsType === UserType.ACADEMIC
+                    ? 'bg-[#198754] text-white shadow-sm'
+                    : 'text-[#a0a0b0] hover:text-white'
+                }`}>
+                Academic
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Dashboard tabs — only show on dashboard page */}
         {(isDashboard || showDashboardNav) && (
           <>
             <div className="mb-6">
               <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Data Series</div>
-              {DATA_SERIES_TABS.map(tabItem)}
+              {(isAcademic ? ACADEMIC_DATA_TABS : RETAIL_DATA_TABS).map(tabItem)}
             </div>
 
+            {!isAcademic && (
+              <div className="mb-6">
+                <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Components</div>
+                {RETAIL_COMPONENT_TABS.map(tabItem)}
+              </div>
+            )}
+
             <div className="mb-6">
-              <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Components</div>
-              {COMPONENT_TABS.map(tabItem)}
+              <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Portal</div>
+              {PORTAL_TABS.map(tabItem)}
             </div>
 
             {/* Filters */}

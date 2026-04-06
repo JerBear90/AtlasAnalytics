@@ -5,6 +5,12 @@ export enum UserRole {
   INSTITUTIONAL = 'institutional',
   ENTERPRISE = 'enterprise',
   ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin',
+}
+
+export enum UserType {
+  RETAIL = 'retail',
+  ACADEMIC = 'academic',
 }
 
 export interface UserProfile {
@@ -12,6 +18,13 @@ export interface UserProfile {
   name: string;
   email: string;
   role: UserRole;
+  userType: UserType;
+  company: string;
+  subscriber: string;
+  primaryContact: string;
+  servicePeriodStart: string;
+  servicePeriodEnd: string;
+  workbookDescription: string;
   createdAt: Date;
   updatedAt: Date;
 }

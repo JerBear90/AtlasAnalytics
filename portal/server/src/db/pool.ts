@@ -24,6 +24,13 @@ function migrate() {
       password_hash TEXT,
       google_id TEXT UNIQUE,
       role TEXT NOT NULL DEFAULT 'retail',
+      user_type TEXT NOT NULL DEFAULT 'retail',
+      company TEXT DEFAULT '',
+      subscriber TEXT DEFAULT '',
+      primary_contact TEXT DEFAULT '',
+      service_period_start TEXT DEFAULT '',
+      service_period_end TEXT DEFAULT '',
+      workbook_description TEXT DEFAULT '',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -81,7 +88,76 @@ function migrate() {
       value TEXT NOT NULL,
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS weekly_time_series (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      ingestion_id TEXT NOT NULL,
+      prediction_quarter TEXT NOT NULL,
+      date TEXT NOT NULL,
+      year INTEGER NOT NULL,
+      day_of_week TEXT,
+      month TEXT,
+      core_gdp REAL,
+      core_gdp_updated REAL,
+      net_exports REAL,
+      private_inventories REAL,
+      gdp REAL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS weekly_financial_targets (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      ingestion_id TEXT NOT NULL,
+      section TEXT NOT NULL,
+      etf TEXT NOT NULL,
+      target_price REAL,
+      trading_price REAL,
+      deviation TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS nx_results (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      ingestion_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      year INTEGER NOT NULL,
+      quarter INTEGER NOT NULL,
+      date2 TEXT NOT NULL,
+      trade_balance REAL,
+      trade_balance_pct_ch TEXT,
+      nx_results TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS pi_results (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      ingestion_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      year INTEGER NOT NULL,
+      quarter INTEGER NOT NULL,
+      date2 TEXT NOT NULL,
+      private_inventories TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `);
+
+  // Add profile columns to existing databases
+  const cols = db.prepare("PRAGMA table_info(users)").all() as { name: string }[];
+  const colNames = cols.map(c => c.name);
+  const newCols: [string, string][] = [
+    ['user_type', "TEXT NOT NULL DEFAULT 'retail'"],
+    ['company', "TEXT DEFAULT ''"],
+    ['subscriber', "TEXT DEFAULT ''"],
+    ['primary_contact', "TEXT DEFAULT ''"],
+    ['service_period_start', "TEXT DEFAULT ''"],
+    ['service_period_end', "TEXT DEFAULT ''"],
+    ['workbook_description', "TEXT DEFAULT ''"],
+  ];
+  for (const [col, def] of newCols) {
+    if (!colNames.includes(col)) {
+      db.exec(`ALTER TABLE users ADD COLUMN ${col} ${def}`);
+    }
+  }
 }
 
 migrate();

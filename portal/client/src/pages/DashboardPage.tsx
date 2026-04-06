@@ -1,15 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { useViewAs } from '../context/ViewAsContext';
 import DashboardLayout from '../components/DashboardLayout';
 import KPICard from '../components/charts/KPICard';
 import LineChart from '../components/charts/LineChart';
 import BarChart from '../components/charts/BarChart';
 import WaterfallChart from '../components/charts/WaterfallChart';
 import ExportButton from '../components/ExportButton';
-import { DashboardData, FilterOptions, DashboardFilters } from '../types';
+import { DashboardData, FilterOptions, DashboardFilters, UserType, UserRole } from '../types';
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState('quarterly');
+  const { user } = useAuth();
+  const { viewAsType } = useViewAs();
+  const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  const isAcademic = isSuperAdmin ? viewAsType === UserType.ACADEMIC : user?.userType === UserType.ACADEMIC;
+  const [activeTab, setActiveTab] = useState(isAcademic ? 'headline_gdp' : 'quarterly');
   const [data, setData] = useState<DashboardData | null>(null);
   const [filters, setFilters] = useState<DashboardFilters>({});
   const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
@@ -17,6 +24,13 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
   const [tablePage, setTablePage] = useState(1);
   const TABLE_PAGE_SIZE = 15;
+
+  // Client product data state
+  const [clientData, setClientData] = useState<{ headers: string[]; rows: (string | number)[][] } | null>(null);
+  const [clientLoading, setClientLoading] = useState(false);
+
+  const isClientTab = ['weekly', 'financial', 'exports', 'inventories'].includes(activeTab);
+  const isPortalTab = ['contents', 'insights', 'support'].includes(activeTab);
 
   const fetchFilters = useCallback(async () => {
     try {
@@ -49,12 +63,74 @@ export default function DashboardPage() {
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { setTablePage(1); }, [filters, activeTab]);
 
+  // Fetch client product data when switching to retail tabs
+  useEffect(() => {
+    if (!isClientTab) { setClientData(null); return; }
+    const tabToEndpoint: Record<string, string> = {
+      weekly: 'weekly', financial: 'financial', exports: 'nx', inventories: 'pi',
+    };
+    const endpoint = tabToEndpoint[activeTab];
+    if (!endpoint) return;
+
+    setClientLoading(true);
+    api.get(`/dashboard/client-data/${endpoint}`)
+      .then(({ data: d }) => {
+        if (endpoint === 'weekly') {
+          const rows = (d.rows || []).map((r: any) => [
+            r.predictionQuarter, r.date, r.year, r.dayOfWeek, r.month,
+            r.coreGdp ?? '', r.coreGdpUpdated ?? '', r.netExports ?? '', r.privateInventories ?? '', r.gdp ?? '',
+          ]);
+          setClientData({
+            headers: ['Prediction Quarter', 'Date', 'Year', 'Day', 'Month', 'Core GDP', 'Core GDP Updated', 'Net Exports', 'Private Inventories', 'GDP'],
+            rows,
+          });
+        } else if (endpoint === 'financial') {
+          const rows = (d.rows || []).map((r: any) => [
+            r.section, r.etf,
+            r.targetPrice != null ? `$${r.targetPrice.toFixed(2)}` : '',
+            r.tradingPrice != null ? `$${r.tradingPrice.toFixed(2)}` : '',
+            r.deviation || '',
+          ]);
+          setClientData({
+            headers: ['Section', 'ETF', 'Target Price', 'Trading Price', 'Deviation'],
+            rows,
+          });
+        } else if (endpoint === 'nx') {
+          const rows = (d.rows || []).map((r: any) => [
+            r.date, r.year, r.quarter, r.date2,
+            r.tradeBalance != null ? r.tradeBalance.toLocaleString() : '',
+            r.tradeBalancePctCh || '', r.nxResults || '',
+          ]);
+          setClientData({
+            headers: ['Date', 'Year', 'Quarter', 'Date2', 'Trade Balance', 'Trade Balance (% Ch)', 'NX Results'],
+            rows,
+          });
+        } else if (endpoint === 'pi') {
+          const rows = (d.rows || []).map((r: any) => [
+            r.date, r.year, r.quarter, r.date2, r.privateInventories || '',
+          ]);
+          setClientData({
+            headers: ['Date', 'Year', 'Quarter', 'Date2', 'Private Inventories'],
+            rows,
+          });
+        }
+      })
+      .catch(() => setClientData(null))
+      .finally(() => setClientLoading(false));
+  }, [activeTab, isClientTab]);
+
   const tabTitles: Record<string, { breadcrumb: string; title: string }> = {
     quarterly: { breadcrumb: 'Dashboard > Economic Overview', title: `${filters.quarter || 'Q4 2025'} Predictions` },
     weekly: { breadcrumb: 'Dashboard > Weekly Time Series', title: 'Weekly Economic Indicators' },
     financial: { breadcrumb: 'Dashboard > Financial Targets', title: 'FY2025 Financial Targets' },
     exports: { breadcrumb: 'Dashboard > Components > Net Exports', title: 'Net Exports Analysis' },
     inventories: { breadcrumb: 'Dashboard > Components > Private Inventories', title: 'Private Inventories Breakdown' },
+    headline_gdp: { breadcrumb: 'Dashboard > Headline GDP', title: 'Headline GDP: Actual vs Atlas Predictions' },
+    core_gdp: { breadcrumb: 'Dashboard > Core GDP', title: 'Core GDP: Actual vs Atlas Predictions' },
+    state_gdp: { breadcrumb: 'Dashboard > State GDP', title: 'State GDP: Actual vs Atlas Predictions' },
+    contents: { breadcrumb: 'Portal > Contents', title: 'Workbook Contents' },
+    insights: { breadcrumb: 'Portal > Insights', title: 'Insights & Analysis' },
+    support: { breadcrumb: 'Portal > Support', title: 'Support & Resources' },
   };
 
   const currentTab = tabTitles[activeTab] || tabTitles.quarterly;
@@ -102,17 +178,222 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {loading && (
+      {/* Portal Sections */}
+      {activeTab === 'contents' && (
+        <div className="space-y-5">
+          <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-white">Workbook Contents</h2>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div><span className="text-[#a0a0b0]">Company</span><p className="text-white mt-1">{user?.company || 'Atlas Analytics, Inc.'}</p></div>
+              <div><span className="text-[#a0a0b0]">Subscriber</span><p className="text-white mt-1">{user?.subscriber || user?.name || '—'}</p></div>
+              <div><span className="text-[#a0a0b0]">Primary Account Contact</span><p className="text-white mt-1">{user?.primaryContact || '—'}</p></div>
+              <div><span className="text-[#a0a0b0]">Service Period</span><p className="text-white mt-1">{user?.servicePeriodStart && user?.servicePeriodEnd ? `${user.servicePeriodStart} – ${user.servicePeriodEnd}` : '—'}</p></div>
+            </div>
+            {user?.workbookDescription && (
+              <div>
+                <span className="text-[#a0a0b0] text-sm">Workbook Description</span>
+                <p className="text-white text-sm mt-1 leading-relaxed">{user.workbookDescription}</p>
+              </div>
+            )}
+          </div>
+          <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6">
+            <h3 className="text-base font-semibold text-white mb-3">Available Sheets</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead><tr className="border-b border-[#2d2d44]">
+                  <th className="px-4 py-3 text-[#a0a0b0] font-medium text-xs uppercase">Sheet Name</th>
+                  <th className="px-4 py-3 text-[#a0a0b0] font-medium text-xs uppercase">Description</th>
+                  <th className="px-4 py-3 text-[#a0a0b0] font-medium text-xs uppercase">Type</th>
+                </tr></thead>
+                <tbody>
+                  {(isAcademic ? [
+                    { name: 'Contents', desc: 'Summary contents table', type: 'Contents' },
+                    { name: 'Insights', desc: 'Bespoke weekly insights on quarterly outputs', type: 'Insights' },
+                    { name: 'Headline GDP', desc: 'Historical and current GDP', type: 'Data' },
+                    { name: 'Core GDP', desc: 'Historical and current Core GDP', type: 'Data' },
+                    { name: 'State GDP', desc: 'State-level GDP predictions and interactive charts', type: 'Data' },
+                    { name: 'Support, Feedback, Disclaimers', desc: 'Resources, feedback and product feature requests', type: 'Contents' },
+                  ] : [
+                    { name: 'Contents', desc: 'Summary contents table', type: 'Contents' },
+                    { name: 'Quarterly Time Series', desc: 'Quarterly time-series data: Actual and Atlas predicted GDP', type: 'Data' },
+                    { name: 'Weekly Time Series', desc: 'Weekly time-series data: Atlas predicted GDP broken down into sub-components', type: 'Data' },
+                    { name: 'Weekly Financial Targets', desc: 'Atlas financial market targets', type: 'Data' },
+                    { name: 'NX Results', desc: 'Atlas predicted Net Exports (trade balance)', type: 'Data' },
+                    { name: 'PI Results', desc: 'Atlas predicted Private Inventories', type: 'Data' },
+                  ]).map((sheet, i) => (
+                    <tr key={i} className="border-b border-[#2d2d44] last:border-0 hover:bg-[rgba(108,93,211,0.05)]">
+                      <td className="px-4 py-3 text-white font-medium">{sheet.name}</td>
+                      <td className="px-4 py-3 text-[#a0a0b0]">{sheet.desc}</td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${sheet.type === 'Data' ? 'bg-[rgba(255,152,0,0.15)] text-[#ff9800]' : sheet.type === 'Insights' ? 'bg-[rgba(76,175,80,0.15)] text-[#4caf50]' : 'bg-[rgba(108,93,211,0.15)] text-[#6c5dd3]'}`}>
+                          {sheet.type}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {isAcademic && (
+            <>
+              <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6 space-y-3">
+                <h3 className="text-base font-semibold text-white">Model Training Window</h3>
+                <p className="text-white text-sm leading-relaxed">
+                  Model trained on: 2005Q2–2021Q4, out-of-sample period provided: 2022Q1–2025Q2
+                </p>
+                <p className="text-[#a0a0b0] text-xs leading-relaxed">
+                  Note: The strictly out-of-sample estimates are generated without access to ex-post data from the evaluation window.
+                  Training window commences in 2005Q2 to correspond with the start of BEA state-level quarterly statistics.
+                </p>
+              </div>
+              <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6 space-y-3">
+                <h3 className="text-base font-semibold text-white">Notes & Methodological Alignment</h3>
+                <ul className="space-y-2 text-sm text-[#a0a0b0] list-disc list-inside">
+                  <li>Growth rates reflect real GDP, seasonally adjusted, matching BEA definitions.</li>
+                  <li>No proprietary satellite factors or model inputs are shared; only the derived GDP estimates are provided.</li>
+                  <li>All values are hard-coded (no formulas) to ensure reproducibility across platforms (R, Python, Stata, MATLAB).</li>
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'insights' && (
+        <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-white">Workbook Insights: Q1 2026</h2>
+          <div className="bg-[#ffd60a]/10 border border-[#ffd60a]/30 rounded-lg p-5 space-y-3">
+            <p className="text-white text-sm leading-relaxed">
+              Atlas Analytics' latest release provides a unified view of U.S. growth across three lenses: Headline GDP, Core GDP, and
+              {isAcademic ? ' state-specific activity.' : ' component-level breakdowns.'}
+            </p>
+            <p className="text-white text-sm leading-relaxed">
+              Headline GDP captures the full macro picture, while Core GDP strips out the most volatile components to reveal
+              the underlying pace of economic expansion. Together, these series point to an economy that is not merely expanding,
+              but doing so on increasingly durable footing.
+            </p>
+            {isAcademic && (
+              <p className="text-white text-sm leading-relaxed">
+                At the state level, our GDP estimates translate these national dynamics into robust localized growth signals,
+                with satellite-derived indicators across tourism, logistics, construction, and services showing broad-based strength.
+              </p>
+            )}
+            {isAcademic && (
+              <div className="pt-2 border-t border-[#ffd60a]/20">
+                <p className="text-white text-sm leading-relaxed">
+                  <span className="font-semibold">Methodological Update & Forecast Revision:</span> We note this Nevada forecast
+                  differs modestly from our initial release due to a refinement in the underlying state model. Following additional
+                  back-testing and signal validation, we corrected for a previously systematic below-trend bias resulting in a stronger
+                  and more representative growth trajectory.
+                </p>
+              </div>
+            )}
+          </div>
+          <p className="text-[#a0a0b0] text-xs">
+            Each dataset is structured for ease of reference and may include accompanying charts or formulas for visualization and analysis.
+          </p>
+        </div>
+      )}
+
+      {activeTab === 'support' && (
+        <div className="space-y-5">
+          <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6 space-y-3">
+            <h2 className="text-lg font-semibold text-white">Contact for Support</h2>
+            <p className="text-white text-sm">Jake W. Schneider, Founder & CEO</p>
+            <a href="mailto:jake@atlasanalytics.com" className="text-[#6c5dd3] text-sm hover:opacity-80">jake@atlasanalytics.com</a>
+          </div>
+          <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6 space-y-3">
+            <h2 className="text-lg font-semibold text-white">Provide Anonymous Feedback and/or Request Product Features</h2>
+            <a href="#" className="text-[#6c5dd3] text-sm hover:opacity-80">Click Here</a>
+          </div>
+          <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6 space-y-3">
+            <h2 className="text-lg font-semibold text-white">Resources</h2>
+            <ul className="space-y-2 text-sm">
+              <li><a href="#" className="text-[#6c5dd3] hover:opacity-80">Activate free Atlas Substack subscription for weekly economic analysis</a></li>
+              <li><a href="#" className="text-[#6c5dd3] hover:opacity-80">View Atlas Analytics, Inc. Legal Disclaimer</a></li>
+              <li><a href="#" className="text-[#6c5dd3] hover:opacity-80">View Client Contract</a></li>
+            </ul>
+          </div>
+          <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-6 space-y-3">
+            <h2 className="text-lg font-semibold text-white">Disclaimer</h2>
+            <p className="text-[#a0a0b0] text-xs leading-relaxed">
+              This workbook and all data, analysis, and content contained herein are confidential and intended solely for the use of the authorized recipient.
+              No part of this Workbook may be copied, reproduced, distributed, or shared in any form without the prior written consent of Atlas Analytics, Inc.
+              Atlas Analytics, Inc. makes no representations or warranties, express or implied, as to the accuracy, completeness, or reliability of the data or analysis.
+              All information is provided "as is" and is subject to change without notice. Use of this Workbook is at the user's own risk.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Client Product Data Tables (retail tabs) */}
+      {isClientTab && clientLoading && (
         <div className="flex justify-center py-20">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#6c5dd3]"></div>
         </div>
       )}
 
-      {error && (
+      {isClientTab && !clientLoading && clientData && clientData.rows.length > 0 && (() => {
+        const totalRows = clientData.rows.length;
+        const totalPages = Math.ceil(totalRows / TABLE_PAGE_SIZE);
+        const start = (tablePage - 1) * TABLE_PAGE_SIZE;
+        const pageRows = clientData.rows.slice(start, start + TABLE_PAGE_SIZE);
+        return (
+          <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44]">
+            <div className="px-4 py-3 border-b border-[#2d2d44] flex items-center justify-between">
+              <span className="text-sm text-[#a0a0b0]">{totalRows} records</span>
+              {totalPages > 1 && (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setTablePage(p => Math.max(1, p - 1))} disabled={tablePage === 1}
+                    className="bg-transparent border border-[#2d2d44] text-[#a0a0b0] px-2.5 py-1 rounded-md text-xs cursor-pointer disabled:opacity-30 hover:text-[#6c5dd3] transition">Prev</button>
+                  <span className="text-xs text-[#a0a0b0]">{tablePage} / {totalPages}</span>
+                  <button onClick={() => setTablePage(p => Math.min(totalPages, p + 1))} disabled={tablePage === totalPages}
+                    className="bg-transparent border border-[#2d2d44] text-[#a0a0b0] px-2.5 py-1 rounded-md text-xs cursor-pointer disabled:opacity-30 hover:text-[#6c5dd3] transition">Next</button>
+                </div>
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left border-collapse">
+                <thead><tr className="border-b border-[#2d2d44]">
+                  {clientData.headers.map((h, j) => (
+                    <th key={j} className="px-4 py-3 text-[#a0a0b0] font-medium text-xs uppercase tracking-[0.5px]">{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {pageRows.map((row, ri) => (
+                    <tr key={ri} className="border-b border-[#2d2d44] last:border-0 hover:bg-[rgba(108,93,211,0.05)]">
+                      {row.map((cell, ci) => (
+                        <td key={ci} className="px-4 py-3 text-white">{String(cell)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
+
+      {isClientTab && !clientLoading && (!clientData || clientData.rows.length === 0) && (
+        <div className="text-center py-20 text-[#a0a0b0]">
+          <p className="text-lg">No data available yet</p>
+          <p className="text-sm mt-2">Upload the corresponding CSV file from Admin &gt; CSV Upload.</p>
+        </div>
+      )}
+
+      {/* Generic dashboard data (quarterly tab and fallback) */}
+      {!isPortalTab && !isClientTab && loading && (
+        <div className="flex justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#6c5dd3]"></div>
+        </div>
+      )}
+
+      {!isPortalTab && !isClientTab && error && (
         <div className="bg-[rgba(220,53,69,0.1)] border border-[#dc3545] text-[#dc3545] px-4 py-3 rounded-xl text-sm">{error}</div>
       )}
 
-      {data && !loading && (
+      {!isPortalTab && !isClientTab && data && !loading && (
         <>
           {/* KPI Grid */}
           {data.kpis.length > 0 && (

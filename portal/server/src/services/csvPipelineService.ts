@@ -8,6 +8,22 @@ import {
 } from '../types';
 import { IngestionRepository } from '../repositories/ingestionRepository';
 import { EconomicDataRepository } from '../repositories/economicDataRepository';
+import { ClientDataRepository } from '../repositories/clientDataRepository';
+
+type CsvFileType = 'generic' | 'weekly_time_series' | 'weekly_financial_targets' | 'nx_results' | 'pi_results';
+
+function detectFileType(headers: string[]): CsvFileType {
+  const h = headers.map(s => s.trim().toLowerCase());
+  if (h.includes('prediction year-quarter') && h.includes('core gdp')) return 'weekly_time_series';
+  if (h.includes('date') && h.includes('trade balance') && h.includes('nx results')) return 'nx_results';
+  if (h.includes('date') && h.includes('private inventories') && h.length <= 5 && !h.includes('trade balance')) return 'pi_results';
+  if (h.includes('country_code') && h.includes('indicator_type')) return 'generic';
+  return 'generic';
+}
+
+function detectFinancialTargets(content: string): boolean {
+  return content.includes('Atlas Analytics Price Targets') || content.includes('Atlas Analytics\' Target');
+}
 
 // Default schema for Atlas economic data CSVs
 const DEFAULT_SCHEMA: CSVSchema = {
@@ -114,9 +130,13 @@ export const CSVPipelineService = {
   ): Promise<IngestionResult> {
     const content = file.toString('utf-8').trim();
 
-    // Empty file check
     if (!content) {
       throw new CSVPipelineError('CSV file is empty.');
+    }
+
+    // Check for financial targets (special format with empty rows and sections)
+    if (detectFinancialTargets(content)) {
+      return this.ingestFinancialTargets(content, filename, uploaderId);
     }
 
     // Parse CSV
@@ -132,12 +152,31 @@ export const CSVPipelineService = {
       throw new CSVPipelineError(`Failed to parse CSV: ${(err as Error).message}`);
     }
 
-    // Header-only check
     if (rows.length === 0) {
       throw new CSVPipelineError('CSV file contains only headers with no data rows.');
     }
 
-    // Check required columns exist
+    const headerKeys = Object.keys(rows[0]);
+    const fileType = detectFileType(headerKeys);
+
+    switch (fileType) {
+      case 'weekly_time_series':
+        return this.ingestWeeklyTimeSeries(rows, filename, uploaderId);
+      case 'nx_results':
+        return this.ingestNxResults(rows, filename, uploaderId);
+      case 'pi_results':
+        return this.ingestPiResults(rows, filename, uploaderId);
+      default:
+        return this.ingestGeneric(rows, filename, uploaderId, schema);
+    }
+  },
+
+  async ingestGeneric(
+    rows: Record<string, string>[],
+    filename: string,
+    uploaderId: string,
+    schema: CSVSchema
+  ): Promise<IngestionResult> {
     const headerKeys = Object.keys(rows[0]);
     for (const reqCol of schema.requiredColumns) {
       if (!headerKeys.includes(reqCol)) {
@@ -145,12 +184,11 @@ export const CSVPipelineService = {
       }
     }
 
-    // Validate each row
     const allErrors: RowValidationError[] = [];
     const validRecords: Omit<EconomicDataRecord, 'id' | 'ingestionId'>[] = [];
 
     for (let i = 0; i < rows.length; i++) {
-      const rowErrors = validateRow(rows[i], i + 1, schema); // 1-indexed row numbers
+      const rowErrors = validateRow(rows[i], i + 1, schema);
       if (rowErrors.length > 0) {
         allErrors.push(...rowErrors);
       } else {
@@ -158,28 +196,173 @@ export const CSVPipelineService = {
       }
     }
 
-    // Store ingestion record
     const ingestionId = await IngestionRepository.create({
-      filename,
-      uploaderId,
-      totalRows: rows.length,
-      validRows: validRecords.length,
-      invalidRows: rows.length - validRecords.length,
-      errors: allErrors,
+      filename, uploaderId, totalRows: rows.length,
+      validRows: validRecords.length, invalidRows: rows.length - validRecords.length, errors: allErrors,
     });
 
-    // Bulk insert valid records
     if (validRecords.length > 0) {
       await EconomicDataRepository.bulkInsert(ingestionId, validRecords);
     }
 
     return {
-      success: allErrors.length === 0,
-      totalRows: rows.length,
-      validRows: validRecords.length,
-      invalidRows: rows.length - validRecords.length,
-      errors: allErrors,
-      ingestionId,
+      success: allErrors.length === 0, totalRows: rows.length,
+      validRows: validRecords.length, invalidRows: rows.length - validRecords.length,
+      errors: allErrors, ingestionId,
+    };
+  },
+
+  async ingestWeeklyTimeSeries(
+    rows: Record<string, string>[],
+    filename: string,
+    uploaderId: string
+  ): Promise<IngestionResult> {
+    const allErrors: RowValidationError[] = [];
+    const validRows: any[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      const pq = (r['Prediction Year-Quarter'] || '').trim();
+      const date = (r['Date'] || '').trim();
+      if (!pq || !date) {
+        allErrors.push({ row: i + 1, column: 'Prediction Year-Quarter', message: 'Required field missing', value: pq });
+        continue;
+      }
+      const parseNum = (v: string) => { const n = parseFloat(v); return isNaN(n) ? null : n; };
+      validRows.push({
+        predictionQuarter: pq, date, year: parseInt(r['Year']) || 0,
+        dayOfWeek: (r['Day of the Week'] || '').trim(), month: (r['Month'] || '').trim(),
+        coreGdp: parseNum(r['Core GDP'] || ''), coreGdpUpdated: parseNum(r['Core GDP Updated'] || ''),
+        netExports: parseNum(r['Net Exports'] || ''), privateInventories: parseNum(r['Private Inventories'] || ''),
+        gdp: parseNum(r['GDP'] || ''),
+      });
+    }
+
+    const ingestionId = await IngestionRepository.create({
+      filename, uploaderId, totalRows: rows.length,
+      validRows: validRows.length, invalidRows: allErrors.length, errors: allErrors,
+    });
+
+    if (validRows.length > 0) {
+      ClientDataRepository.bulkInsertWeeklyTimeSeries(ingestionId, validRows);
+    }
+
+    return {
+      success: allErrors.length === 0, totalRows: rows.length,
+      validRows: validRows.length, invalidRows: allErrors.length,
+      errors: allErrors, ingestionId,
+    };
+  },
+
+  async ingestFinancialTargets(
+    content: string,
+    filename: string,
+    uploaderId: string
+  ): Promise<IngestionResult> {
+    const lines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const validRows: any[] = [];
+    let currentSection = 'GDP-Based';
+
+    for (const line of lines) {
+      if (line.includes('Core GDP-Based')) { currentSection = 'Core GDP-Based'; continue; }
+      if (line.includes('GDP-Based') && !line.includes('Core')) { currentSection = 'GDP-Based'; continue; }
+      if (line.includes('Atlas Analytics Price Targets') || line.includes('As of Market Close') || line.includes('ETF,')) continue;
+
+      const parts = line.split(',').map(s => s.trim());
+      // Look for rows where second column is an ETF ticker
+      const etf = (parts[1] || '').trim();
+      if (!etf || etf.length > 6 || etf.length < 2 || etf.includes(' ')) continue;
+      if (['ETF'].includes(etf)) continue;
+
+      const cleanPrice = (s: string) => { const n = parseFloat(s.replace(/[$,\s`]/g, '')); return isNaN(n) ? null : n; };
+      validRows.push({
+        section: currentSection, etf,
+        targetPrice: cleanPrice(parts[2] || ''),
+        tradingPrice: cleanPrice(parts[3] || ''),
+        deviation: (parts[4] || '').trim(),
+      });
+    }
+
+    const ingestionId = await IngestionRepository.create({
+      filename, uploaderId, totalRows: validRows.length,
+      validRows: validRows.length, invalidRows: 0, errors: [],
+    });
+
+    if (validRows.length > 0) {
+      ClientDataRepository.bulkInsertFinancialTargets(ingestionId, validRows);
+    }
+
+    return {
+      success: true, totalRows: validRows.length,
+      validRows: validRows.length, invalidRows: 0,
+      errors: [], ingestionId,
+    };
+  },
+
+  async ingestNxResults(
+    rows: Record<string, string>[],
+    filename: string,
+    uploaderId: string
+  ): Promise<IngestionResult> {
+    const validRows: any[] = [];
+    for (const r of rows) {
+      const date = (r['Date'] || '').trim();
+      if (!date) continue;
+      const parseNum = (v: string) => { const n = parseFloat(v.replace(/,/g, '')); return isNaN(n) ? null : n; };
+      validRows.push({
+        date, year: parseInt(r['Year']) || 0, quarter: parseInt(r['Quarter']) || 0,
+        date2: (r['Date2'] || '').trim(),
+        tradeBalance: parseNum(r['Trade Balance'] || ''),
+        tradeBalancePctCh: (r['Trade Balance (% Ch)'] || '').trim(),
+        nxResults: (r['NX Results'] || '').trim(),
+      });
+    }
+
+    const ingestionId = await IngestionRepository.create({
+      filename, uploaderId, totalRows: rows.length,
+      validRows: validRows.length, invalidRows: rows.length - validRows.length, errors: [],
+    });
+
+    if (validRows.length > 0) {
+      ClientDataRepository.bulkInsertNxResults(ingestionId, validRows);
+    }
+
+    return {
+      success: true, totalRows: rows.length,
+      validRows: validRows.length, invalidRows: rows.length - validRows.length,
+      errors: [], ingestionId,
+    };
+  },
+
+  async ingestPiResults(
+    rows: Record<string, string>[],
+    filename: string,
+    uploaderId: string
+  ): Promise<IngestionResult> {
+    const validRows: any[] = [];
+    for (const r of rows) {
+      const date = (r['Date'] || '').trim();
+      if (!date) continue;
+      validRows.push({
+        date, year: parseInt(r['Year']) || 0, quarter: parseInt(r['Quarter']) || 0,
+        date2: (r['Date2'] || '').trim(),
+        privateInventories: (r['Private Inventories'] || '').trim(),
+      });
+    }
+
+    const ingestionId = await IngestionRepository.create({
+      filename, uploaderId, totalRows: rows.length,
+      validRows: validRows.length, invalidRows: rows.length - validRows.length, errors: [],
+    });
+
+    if (validRows.length > 0) {
+      ClientDataRepository.bulkInsertPiResults(ingestionId, validRows);
+    }
+
+    return {
+      success: true, totalRows: rows.length,
+      validRows: validRows.length, invalidRows: rows.length - validRows.length,
+      errors: [], ingestionId,
     };
   },
 

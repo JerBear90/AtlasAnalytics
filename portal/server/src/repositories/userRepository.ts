@@ -1,5 +1,5 @@
 import db from '../db/pool';
-import { UserProfile, UserRole } from '../types';
+import { UserProfile, UserRole, UserType } from '../types';
 
 interface UserRow {
   id: string;
@@ -8,6 +8,13 @@ interface UserRow {
   password_hash: string | null;
   google_id: string | null;
   role: UserRole;
+  user_type: string;
+  company: string;
+  subscriber: string;
+  primary_contact: string;
+  service_period_start: string;
+  service_period_end: string;
+  workbook_description: string;
   created_at: string;
   updated_at: string;
 }
@@ -18,6 +25,13 @@ function toProfile(row: UserRow): UserProfile {
     name: row.name,
     email: row.email,
     role: row.role as UserRole,
+    userType: (row.user_type || 'retail') as UserType,
+    company: row.company || '',
+    subscriber: row.subscriber || '',
+    primaryContact: row.primary_contact || '',
+    servicePeriodStart: row.service_period_start || '',
+    servicePeriodEnd: row.service_period_end || '',
+    workbookDescription: row.workbook_description || '',
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
@@ -52,6 +66,34 @@ export const UserRepository = {
 
   async updateProfile(id: string, updates: { name: string }): Promise<UserProfile> {
     db.prepare('UPDATE users SET name = ?, updated_at = datetime(\'now\') WHERE id = ?').run(updates.name, id);
+    return (await this.findById(id))!;
+  },
+
+  async updateUserProfile(id: string, updates: {
+    name?: string;
+    userType?: UserType;
+    company?: string;
+    subscriber?: string;
+    primaryContact?: string;
+    servicePeriodStart?: string;
+    servicePeriodEnd?: string;
+    workbookDescription?: string;
+  }): Promise<UserProfile> {
+    const fields: string[] = [];
+    const values: any[] = [];
+    if (updates.name !== undefined) { fields.push('name = ?'); values.push(updates.name); }
+    if (updates.userType !== undefined) { fields.push('user_type = ?'); values.push(updates.userType); }
+    if (updates.company !== undefined) { fields.push('company = ?'); values.push(updates.company); }
+    if (updates.subscriber !== undefined) { fields.push('subscriber = ?'); values.push(updates.subscriber); }
+    if (updates.primaryContact !== undefined) { fields.push('primary_contact = ?'); values.push(updates.primaryContact); }
+    if (updates.servicePeriodStart !== undefined) { fields.push('service_period_start = ?'); values.push(updates.servicePeriodStart); }
+    if (updates.servicePeriodEnd !== undefined) { fields.push('service_period_end = ?'); values.push(updates.servicePeriodEnd); }
+    if (updates.workbookDescription !== undefined) { fields.push('workbook_description = ?'); values.push(updates.workbookDescription); }
+    if (fields.length > 0) {
+      fields.push("updated_at = datetime('now')");
+      values.push(id);
+      db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+    }
     return (await this.findById(id))!;
   },
 

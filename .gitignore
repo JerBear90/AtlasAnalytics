@@ -10,6 +10,9 @@ portal/server/.env
 portal/.env.production
 portal/.env
 
+# Private keys
+*.pem
+
 # Database files
 portal/server/data/*.db
 portal/server/data/*.db-shm

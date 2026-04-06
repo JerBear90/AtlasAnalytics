@@ -6,8 +6,8 @@ Economic data analytics platform with a client portal for GDP nowcasting, trade 
 
 ```
 ├── portal/                # Client Portal
-│   ├── client/            # React + TypeScript + Vite + Tailwind
-│   ├── server/            # Express + TypeScript + SQLite
+│   ├── client/            # React + TypeScript + Vite + Tailwind (Frontend)
+│   ├── server/            # Express + TypeScript + SQLite (API)
 │   └── data/              # Client product CSV data files
 ├── landing-page-mockups/  # Static HTML page designs
 └── README.md
@@ -18,19 +18,22 @@ Economic data analytics platform with a client portal for GDP nowcasting, trade 
 - JWT authentication (email/password + Google SSO)
 - User roles: Retail, Institutional, Enterprise, Admin, Super Admin
 - Two user types with distinct dashboard experiences:
-  - **Retail**: Weekly Time Series, Quarterly Time Series, Financial Targets, Net Exports, Private Inventories
-  - **Academic**: Headline GDP, Core GDP, State GDP with model training metadata
+  - Retail: Overview, Quarterly Time Series, Weekly Time Series, Financial Targets, Net Exports, Private Inventories
+  - Academic: Overview, Headline GDP, Core GDP, State GDP with model training metadata
+- Overview dashboard with draggable, rearrangeable charts (layout saved to localStorage)
 - Super Admin "View As" toggle to preview both user type experiences
 - User profiles with company, subscriber, contact, and service period fields
-- CSV ingestion pipeline with auto-detection for 5 file formats
+- CSV ingestion pipeline with auto-detection for 7 file formats
+- Multi-file upload (up to 20 files at once)
+- Inline tab-specific filters (Year, Quarter, Month, Section)
 - Portal sections: Contents, Insights, Support with workbook metadata
-- Interactive charts (line, bar, waterfall) via Chart.js
+- Interactive charts (line, bar, waterfall) with Weekly/Monthly toggle and View Details
 - Data export (CSV/JSON) with role-enforced format restrictions
 - Admin panel for CSV uploads and user management
 - Editable user profiles in Settings
-- Responsive dark-themed UI
+- Fully mobile responsive dark-themed UI
 
-## Quick Start
+## Quick Start (Local Development)
 
 ### Prerequisites
 - Node.js 18+
@@ -65,18 +68,46 @@ npx ts-node src/db/seedClientData.ts
 | Admin       | admin@atlas.com    | admin123  |
 | Demo        | demo@atlas.com     | demo1234  |
 
-### URLs
+### Local URLs
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:4000
 
-## Deployment
+## Deploy to Railway
 
-The portal deploys as two Docker services (client + server). See [portal/DEPLOYMENT.md](portal/DEPLOYMENT.md) for full instructions covering:
+The portal runs as two separate Railway services from the same GitHub repo.
 
-- **Railway** (recommended) — push-to-deploy from GitHub
-- **Docker on VPS** — AWS EC2, DigitalOcean, Lightsail, etc.
+### Step 1: Create the Server Service
+1. In your Railway project, click "New" > "GitHub Repo" > select `AtlasAnalytics`
+2. Go to Settings > set Root Directory to `portal/server`
+3. Builder: Dockerfile
+4. Add Variables:
+   - `JWT_SECRET` = (run `openssl rand -hex 32`)
+   - `PORT` = `4000`
+   - `CLIENT_URL` = `https://<your-client-service>.up.railway.app`
+   - `NODE_ENV` = `production`
+5. Add a Volume: mount path `/app/data` (persists the SQLite database)
+6. Go to Settings > Networking > Generate Domain
+7. Note the server URL (e.g., `https://atlasanalytics-server-production.up.railway.app`)
 
-Production URL: `https://portal.atlasanalytics.com`
+### Step 2: Create the Client Service
+1. Click "New" > "GitHub Repo" > select `AtlasAnalytics` again (creates a second service)
+2. Go to Settings > set Root Directory to `portal/client`
+3. Builder: Dockerfile
+4. Add Variables:
+   - `VITE_API_URL` = `https://<your-server-url-from-step-1>/api`
+5. Go to Settings > Networking > Generate Domain (or add custom domain `portal.atlasanalytics.com`)
+
+### Step 3: Custom Domain (optional)
+1. On the client service, go to Settings > Networking > Custom Domain
+2. Add `portal.atlasanalytics.com`
+3. Railway gives you a CNAME target
+4. In your DNS provider, add: `CNAME portal -> <railway-cname-target>`
+
+### Step 4: Seed Admin User
+Use Railway's shell on the server service to create your admin account. See [portal/DEPLOYMENT.md](portal/DEPLOYMENT.md) for the seed command.
+
+### Updating
+Push to `master` — Railway auto-deploys both services.
 
 ## Tech Stack
 
@@ -93,11 +124,7 @@ Production URL: `https://portal.atlasanalytics.com`
 | Testing     | Jest, ts-jest, fast-check (property-based)                      |
 | Build       | Vite (client), tsc (server)                                     |
 | Deploy      | Docker, nginx, Railway                                          |
-| SSL         | Caddy (auto Let's Encrypt) or Certbot                           |
-| Backend  | Express, TypeScript, better-sqlite3                |
-| Auth     | JWT, bcrypt, Google OAuth 2.0                      |
-| Testing  | Jest, fast-check (property-based)                  |
-| Deploy   | Docker, Railway                                    |
+| SSL         | Railway (auto) or Caddy/Certbot (self-hosted)                   |
 
 ## Tests
 
@@ -110,12 +137,14 @@ npm test
 
 The pipeline auto-detects these formats on upload:
 
-| Format | Key Headers |
-|--------|-------------|
+| Format | Key Headers / Detection |
+|--------|------------------------|
+| Quarterly Time Series | `US GDP (SAAR)`, `Atlas Predicted (SAAR)` |
 | Weekly Time Series | `Prediction Year-Quarter`, `Core GDP`, `GDP` |
 | Weekly Financial Targets | `Atlas Analytics Price Targets` (section header) |
 | NX Results | `Date`, `Trade Balance`, `NX Results` |
 | PI Results | `Date`, `Private Inventories` |
+| Academic GDP (Headline/Core/State) | `BEA Actual`, `Atlas Predictions` (type from filename) |
 | Generic Economic Data | `country_code`, `indicator_type`, `quarter`, `value` |
 
 ## License

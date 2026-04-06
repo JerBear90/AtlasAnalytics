@@ -16,7 +16,7 @@ export default function DashboardPage() {
   const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
   const isAcademic = isSuperAdmin ? viewAsType === UserType.ACADEMIC : user?.userType === UserType.ACADEMIC;
-  const [activeTab, setActiveTab] = useState(isAcademic ? 'headline_gdp' : 'quarterly');
+  const [activeTab, setActiveTab] = useState('overview');
   const [data, setData] = useState<DashboardData | null>(null);
   const [filters, setFilters] = useState<DashboardFilters>({});
   const [filterOptions, setFilterOptions] = useState<FilterOptions | null>(null);
@@ -29,7 +29,19 @@ export default function DashboardPage() {
   const [clientData, setClientData] = useState<{ headers: string[]; rows: (string | number)[][] } | null>(null);
   const [clientLoading, setClientLoading] = useState(false);
 
-  const isClientTab = ['weekly', 'financial', 'exports', 'inventories', 'quarterly'].includes(activeTab);
+  // Inline tab filters
+  const [tabFilters, setTabFilters] = useState<Record<string, string>>({});
+  const resetTabFilters = () => setTabFilters({});
+
+  // Overview charts state
+  const [overviewCharts, setOverviewCharts] = useState<any[]>([]);
+  const [overviewLoading, setOverviewLoading] = useState(false);
+  const [chartOrder, setChartOrder] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('atlas_chart_order') || '[]'); } catch { return []; }
+  });
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  const isClientTab = ['weekly', 'financial', 'exports', 'inventories', 'quarterly', 'headline_gdp', 'core_gdp', 'state_gdp'].includes(activeTab);
   const isPortalTab = ['contents', 'insights', 'support'].includes(activeTab);
 
   const fetchFilters = useCallback(async () => {
@@ -61,19 +73,45 @@ export default function DashboardPage() {
 
   useEffect(() => { fetchFilters(); }, [fetchFilters]);
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { setTablePage(1); }, [filters, activeTab]);
+  useEffect(() => { setTablePage(1); resetTabFilters(); }, [filters, activeTab]);
+
+  // Fetch overview charts
+  useEffect(() => {
+    if (activeTab !== 'overview') return;
+    setOverviewLoading(true);
+    const params: Record<string, string> = {};
+    if (filters.quarter) params.quarter = filters.quarter;
+    if (filters.dateRange?.start) params.startDate = filters.dateRange.start;
+    if (filters.dateRange?.end) params.endDate = filters.dateRange.end;
+    api.get('/dashboard/overview', { params })
+      .then(({ data: d }) => {
+        const charts = d.charts || [];
+        setOverviewCharts(charts);
+        // If no saved order, use default order
+        if (chartOrder.length === 0 && charts.length > 0) {
+          setChartOrder(charts.map((c: any) => c.id));
+        }
+      })
+      .catch(() => {})
+      .finally(() => setOverviewLoading(false));
+  }, [activeTab, filters]);
 
   // Fetch client product data when switching to retail tabs
   useEffect(() => {
     if (!isClientTab) { setClientData(null); return; }
     const tabToEndpoint: Record<string, string> = {
       weekly: 'weekly', financial: 'financial', exports: 'nx', inventories: 'pi', quarterly: 'quarterly',
+      headline_gdp: 'headline_gdp', core_gdp: 'core_gdp', state_gdp: 'state_gdp',
     };
     const endpoint = tabToEndpoint[activeTab];
     if (!endpoint) return;
 
     setClientLoading(true);
-    api.get(`/dashboard/client-data/${endpoint}`)
+    const params: Record<string, string> = {};
+    if (filters.quarter) params.quarter = filters.quarter;
+    if (filters.dateRange?.start) params.startDate = filters.dateRange.start;
+    if (filters.dateRange?.end) params.endDate = filters.dateRange.end;
+    api.get(`/dashboard/client-data/${endpoint}`, { params })
       .then(({ data: d }) => {
         if (endpoint === 'weekly') {
           const rows = (d.rows || []).map((r: any) => [
@@ -121,14 +159,23 @@ export default function DashboardPage() {
             headers: ['Date', 'Year', 'Quarter', 'Date2', 'US GDP (SAAR)', 'Atlas Predicted (SAAR)'],
             rows,
           });
+        } else if (['headline_gdp', 'core_gdp', 'state_gdp'].includes(endpoint)) {
+          const rows = (d.rows || []).map((r: any) => [
+            r.date, r.year, r.quarter, r.date2, r.beaActual || '', r.atlasPredicted || '',
+          ]);
+          setClientData({
+            headers: ['Date', 'Year', 'Quarter', 'Date 2', 'BEA Actual', 'Atlas Predictions'],
+            rows,
+          });
         }
       })
       .catch(() => setClientData(null))
       .finally(() => setClientLoading(false));
-  }, [activeTab, isClientTab]);
+  }, [activeTab, isClientTab, filters]);
 
   const tabTitles: Record<string, { breadcrumb: string; title: string }> = {
-    quarterly: { breadcrumb: 'Dashboard > Economic Overview', title: `${filters.quarter || 'Q4 2025'} Predictions` },
+    overview: { breadcrumb: 'Dashboard > Overview', title: 'Economic Overview' },
+    quarterly: { breadcrumb: 'Dashboard > Quarterly Time Series', title: 'Quarterly Time Series' },
     weekly: { breadcrumb: 'Dashboard > Weekly Time Series', title: 'Weekly Economic Indicators' },
     financial: { breadcrumb: 'Dashboard > Financial Targets', title: 'FY2025 Financial Targets' },
     exports: { breadcrumb: 'Dashboard > Components > Net Exports', title: 'Net Exports Analysis' },
@@ -185,6 +232,79 @@ export default function DashboardPage() {
           <ExportButton filters={filters} />
         </div>
       </div>
+
+      {/* Overview Tab */}
+      {activeTab === 'overview' && overviewLoading && (
+        <div className="flex justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#6c5dd3]"></div>
+        </div>
+      )}
+
+      {activeTab === 'overview' && !overviewLoading && (() => {
+        // Filter charts based on user type
+        const retailChartIds = ['quarterly_gdp', 'weekly_gdp', 'trade_balance', 'private_inventories', 'financial_targets'];
+        const academicChartIds = ['headline_gdp', 'core_gdp', 'state_gdp'];
+        const allowedIds = isAcademic ? [...academicChartIds, 'quarterly_gdp'] : retailChartIds;
+        const available = overviewCharts.filter(c => allowedIds.includes(c.id));
+
+        // Apply saved order
+        const orderedCharts = chartOrder.length > 0
+          ? chartOrder.map(id => available.find(c => c.id === id)).filter(Boolean).concat(available.filter(c => !chartOrder.includes(c.id)))
+          : available;
+
+        const handleDragStart = (idx: number) => setDragIdx(idx);
+        const handleDragOver = (e: React.DragEvent, idx: number) => {
+          e.preventDefault();
+          if (dragIdx === null || dragIdx === idx) return;
+          const newOrder = [...orderedCharts.map((c: any) => c.id)];
+          const [moved] = newOrder.splice(dragIdx, 1);
+          newOrder.splice(idx, 0, moved);
+          setChartOrder(newOrder);
+          localStorage.setItem('atlas_chart_order', JSON.stringify(newOrder));
+          setDragIdx(idx);
+        };
+        const handleDragEnd = () => setDragIdx(null);
+
+        const colors = ['#6c5dd3', '#198754', '#fd7e14', '#dc3545', '#0dcaf0', '#ffd60a'];
+
+        if (available.length === 0) {
+          return (
+            <div className="text-center py-20 text-[#a0a0b0]">
+              <p className="text-lg">No chart data available yet</p>
+              <p className="text-sm mt-2">Upload CSV files to populate the overview charts.</p>
+            </div>
+          );
+        }
+
+        return (
+          <>
+            <p className="text-xs text-[#a0a0b0]">Drag charts to rearrange. Layout is saved automatically.</p>
+            <div className="grid grid-cols-2 gap-5 max-lg:grid-cols-1">
+              {orderedCharts.map((chart: any, idx: number) => (
+                <div key={chart.id} draggable onDragStart={() => handleDragStart(idx)} onDragOver={(e) => handleDragOver(e, idx)} onDragEnd={handleDragEnd}
+                  className={`bg-[#1e1e2f] rounded-xl border border-[#2d2d44] p-5 cursor-grab active:cursor-grabbing transition ${dragIdx === idx ? 'opacity-50 border-[#6c5dd3]' : ''} ${chart.type === 'line' && orderedCharts.length > 2 && idx === 0 ? 'col-span-2 max-lg:col-span-1' : ''}`}>
+                  <h3 className="text-sm font-semibold text-white mb-4">{chart.title}</h3>
+                  {chart.type === 'line' ? (
+                    <LineChart dataset={{
+                      label: chart.title,
+                      type: 'line',
+                      labels: chart.labels,
+                      data: chart.datasets[0].data,
+                    }} bare />
+                  ) : (
+                    <BarChart dataset={{
+                      label: chart.title,
+                      type: 'bar',
+                      labels: chart.labels,
+                      data: chart.datasets[0].data,
+                    }} bare />
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      })()}
 
       {/* Portal Sections */}
       {activeTab === 'contents' && (
@@ -343,20 +463,96 @@ export default function DashboardPage() {
       )}
 
       {isClientTab && !clientLoading && clientData && clientData.rows.length > 0 && (() => {
-        const totalRows = clientData.rows.length;
-        const totalPages = Math.ceil(totalRows / TABLE_PAGE_SIZE);
-        const start = (tablePage - 1) * TABLE_PAGE_SIZE;
-        const pageRows = clientData.rows.slice(start, start + TABLE_PAGE_SIZE);
+        // Define which columns are filterable per tab (header index -> filter type)
+        const tabFilterConfigs: Record<string, { col: number; label: string; key: string }[]> = {
+          quarterly: [
+            { col: 1, label: 'Year', key: 'year' },
+          ],
+          weekly: [
+            { col: 0, label: 'Quarter', key: 'quarter' },
+            { col: 2, label: 'Year', key: 'year' },
+            { col: 4, label: 'Month', key: 'month' },
+          ],
+          financial: [
+            { col: 0, label: 'Section', key: 'section' },
+          ],
+          exports: [
+            { col: 1, label: 'Year', key: 'year' },
+          ],
+          inventories: [
+            { col: 1, label: 'Year', key: 'year' },
+          ],
+          headline_gdp: [
+            { col: 1, label: 'Year', key: 'year' },
+          ],
+          core_gdp: [
+            { col: 1, label: 'Year', key: 'year' },
+          ],
+          state_gdp: [
+            { col: 1, label: 'Year', key: 'year' },
+          ],
+        };
+
+        const filterConfig = tabFilterConfigs[activeTab] || [];
+
+        // Get unique values for each filter
+        const filterOptionsMap: Record<string, string[]> = {};
+        for (const fc of filterConfig) {
+          const vals = new Set<string>();
+          for (const row of clientData.rows) {
+            const v = String(row[fc.col] ?? '').trim();
+            if (v) vals.add(v);
+          }
+          filterOptionsMap[fc.key] = Array.from(vals).sort();
+        }
+
+        // Apply filters
+        let filteredRows = clientData.rows;
+        for (const fc of filterConfig) {
+          const filterVal = tabFilters[fc.key];
+          if (filterVal) {
+            filteredRows = filteredRows.filter(row => String(row[fc.col]).trim() === filterVal);
+          }
+        }
+
+        const totalRows = filteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalRows / TABLE_PAGE_SIZE));
+        const effectivePage = Math.min(Math.max(1, tablePage), totalPages);
+        const start = (effectivePage - 1) * TABLE_PAGE_SIZE;
+        const pageRows = filteredRows.slice(start, start + TABLE_PAGE_SIZE);
+
+        const selectClass = 'bg-[#181824] border border-[#2d2d44] rounded-md px-3 py-1.5 text-white text-xs focus:outline-none focus:ring-1 focus:ring-[#6c5dd3] cursor-pointer';
+
         return (
-          <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44]">
+          <>
+            {/* Inline Filters */}
+            {filterConfig.length > 0 && (
+              <div className="flex items-center gap-3 flex-wrap">
+                {filterConfig.map(fc => (
+                  <div key={fc.key} className="flex items-center gap-1.5">
+                    <span className="text-xs text-[#a0a0b0]">{fc.label}:</span>
+                    <select value={tabFilters[fc.key] || ''} onChange={e => { setTabFilters(f => ({ ...f, [fc.key]: e.target.value })); setTablePage(1); }} className={selectClass}>
+                      <option value="">All</option>
+                      {(filterOptionsMap[fc.key] || []).map(v => <option key={v} value={v}>{v}</option>)}
+                    </select>
+                  </div>
+                ))}
+                {Object.values(tabFilters).some(v => v) && (
+                  <button onClick={() => { resetTabFilters(); setTablePage(1); }} className="text-xs text-[#6c5dd3] hover:text-white transition cursor-pointer">Clear filters</button>
+                )}
+                <span className="text-xs text-[#a0a0b0] ml-auto">{totalRows} of {clientData.rows.length} records</span>
+              </div>
+            )}
+
+            <div className="bg-[#1e1e2f] rounded-xl border border-[#2d2d44]">
             <div className="px-4 py-3 border-b border-[#2d2d44] flex items-center justify-between">
               <span className="text-sm text-[#a0a0b0]">{totalRows} records</span>
               {totalPages > 1 && (
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setTablePage(p => Math.max(1, p - 1))} disabled={tablePage === 1}
+                  <button onClick={() => setTablePage(p => Math.max(1, p - 1))} disabled={effectivePage === 1}
                     className="bg-transparent border border-[#2d2d44] text-[#a0a0b0] px-2.5 py-1 rounded-md text-xs cursor-pointer disabled:opacity-30 hover:text-[#6c5dd3] transition">Prev</button>
-                  <span className="text-xs text-[#a0a0b0]">{tablePage} / {totalPages}</span>
-                  <button onClick={() => setTablePage(p => Math.min(totalPages, p + 1))} disabled={tablePage === totalPages}
+                  <span className="text-xs text-[#a0a0b0]">{effectivePage} / {totalPages}</span>
+                  <button onClick={() => setTablePage(p => Math.min(totalPages, p + 1))} disabled={effectivePage === totalPages}
                     className="bg-transparent border border-[#2d2d44] text-[#a0a0b0] px-2.5 py-1 rounded-md text-xs cursor-pointer disabled:opacity-30 hover:text-[#6c5dd3] transition">Next</button>
                 </div>
               )}
@@ -380,6 +576,7 @@ export default function DashboardPage() {
               </table>
             </div>
           </div>
+          </>
         );
       })()}
 

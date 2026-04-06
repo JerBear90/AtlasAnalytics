@@ -12,7 +12,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 router.use(authMiddleware);
 router.use(requireAdmin);
 
-// POST /api/csv/upload
+// POST /api/csv/upload (single file - kept for backward compatibility)
 router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
@@ -31,6 +31,35 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     } else {
       res.status(500).json({ error: 'Internal server error.' });
     }
+  }
+});
+
+// POST /api/csv/upload-multiple
+router.post('/upload-multiple', upload.array('files', 20), async (req: Request, res: Response) => {
+  try {
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      res.status(400).json({ error: 'At least one CSV file is required.' });
+      return;
+    }
+    const results = [];
+    for (const file of files) {
+      try {
+        const result = await CSVPipelineService.ingestCSV(file.buffer, file.originalname, req.user!.id);
+        results.push({ filename: file.originalname, ...result });
+      } catch (err) {
+        results.push({
+          filename: file.originalname,
+          success: false,
+          error: err instanceof CSVPipelineError ? err.message : 'Failed to process file',
+          totalRows: 0, validRows: 0, invalidRows: 0, errors: [],
+        });
+      }
+    }
+    const allSuccess = results.every(r => r.success);
+    res.status(allSuccess ? 200 : 207).json({ results });
+  } catch (err) {
+    res.status(500).json({ error: 'Internal server error.' });
   }
 });
 

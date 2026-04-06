@@ -8,6 +8,7 @@ import {
   TableData,
 } from '../types';
 import { EconomicDataRepository } from '../repositories/economicDataRepository';
+import { ClientDataRepository } from '../repositories/clientDataRepository';
 import { getDataScope } from '../middleware/roleMiddleware';
 
 export const DashboardDataService = {
@@ -46,15 +47,10 @@ export const DashboardDataService = {
       countries = countries.filter(c => EconomicDataRepository.LIMITED_COUNTRIES.includes(c));
     }
 
-    const quarters = await EconomicDataRepository.getDistinctQuarters();
-
-    // For retail, only show current quarter
-    const filteredQuarters = scope.timeRange === 'current_quarter' && quarters.length > 0
-      ? [quarters[0]]
-      : quarters;
+    const quarters = ClientDataRepository.getAllQuarters();
 
     return {
-      quarters: filteredQuarters,
+      quarters,
       countries,
       dateRanges: [
         { label: 'Last 30 days', value: '30d' },

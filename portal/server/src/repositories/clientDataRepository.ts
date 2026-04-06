@@ -1,6 +1,17 @@
 import db from '../db/pool';
 import crypto from 'crypto';
 
+export interface AcademicGdpRow {
+  id: string;
+  gdpType: string;
+  date: string;
+  year: number;
+  quarter: number;
+  date2: string;
+  beaActual: string;
+  atlasPredicted: string;
+}
+
 export interface QuarterlyTimeSeriesRow {
   id: string;
   date: string;
@@ -55,6 +66,33 @@ export interface PiResultRow {
 }
 
 export const ClientDataRepository = {
+  bulkInsertAcademicGdp(ingestionId: string, rows: Omit<AcademicGdpRow, 'id'>[]): number {
+    const insert = db.prepare(
+      `INSERT INTO academic_gdp (id, ingestion_id, gdp_type, date, year, quarter, date2, bea_actual, atlas_predicted)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    const tx = db.transaction(() => {
+      for (const r of rows) {
+        insert.run(crypto.randomBytes(16).toString('hex'), ingestionId,
+          r.gdpType, r.date, r.year, r.quarter, r.date2, r.beaActual, r.atlasPredicted);
+      }
+    });
+    tx();
+    return rows.length;
+  },
+
+  getAcademicGdp(gdpType: string, dateStart?: string, dateEnd?: string): AcademicGdpRow[] {
+    let sql = 'SELECT * FROM academic_gdp WHERE gdp_type = ?';
+    const params: string[] = [gdpType];
+    if (dateStart) { sql += ' AND date >= ?'; params.push(dateStart); }
+    if (dateEnd) { sql += ' AND date <= ?'; params.push(dateEnd); }
+    sql += ' ORDER BY date DESC';
+    return (db.prepare(sql).all(...params) as any[]).map(r => ({
+      id: r.id, gdpType: r.gdp_type, date: r.date, year: r.year, quarter: r.quarter, date2: r.date2,
+      beaActual: r.bea_actual || '', atlasPredicted: r.atlas_predicted || '',
+    }));
+  },
+
   bulkInsertQuarterlyTimeSeries(ingestionId: string, rows: Omit<QuarterlyTimeSeriesRow, 'id'>[]): number {
     const insert = db.prepare(
       `INSERT INTO quarterly_time_series (id, ingestion_id, date, year, quarter, date2, us_gdp, atlas_predicted)
@@ -70,8 +108,16 @@ export const ClientDataRepository = {
     return rows.length;
   },
 
-  getQuarterlyTimeSeries(): QuarterlyTimeSeriesRow[] {
-    return (db.prepare('SELECT * FROM quarterly_time_series ORDER BY date ASC').all() as any[]).map(r => ({
+  getQuarterlyTimeSeries(dateStart?: string, dateEnd?: string, quarter?: string): QuarterlyTimeSeriesRow[] {
+    let sql = 'SELECT * FROM quarterly_time_series';
+    const params: string[] = [];
+    const conditions: string[] = [];
+    if (dateStart) { conditions.push('date >= ?'); params.push(dateStart); }
+    if (dateEnd) { conditions.push('date <= ?'); params.push(dateEnd); }
+    if (quarter) { conditions.push('date2 = ?'); params.push(quarter); }
+    if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
+    sql += ' ORDER BY date DESC';
+    return (db.prepare(sql).all(...params) as any[]).map(r => ({
       id: r.id, date: r.date, year: r.year, quarter: r.quarter, date2: r.date2,
       usGdp: r.us_gdp || '', atlasPredicted: r.atlas_predicted || '',
     }));
@@ -142,7 +188,7 @@ export const ClientDataRepository = {
     let sql = 'SELECT * FROM weekly_time_series';
     const params: string[] = [];
     if (quarter) { sql += ' WHERE prediction_quarter = ?'; params.push(quarter); }
-    sql += ' ORDER BY date ASC';
+    sql += ' ORDER BY date DESC';
     return (db.prepare(sql).all(...params) as any[]).map(r => ({
       id: r.id, predictionQuarter: r.prediction_quarter, date: r.date,
       year: r.year, dayOfWeek: r.day_of_week, month: r.month,
@@ -158,15 +204,29 @@ export const ClientDataRepository = {
     }));
   },
 
-  getNxResults(): NxResultRow[] {
-    return (db.prepare('SELECT * FROM nx_results ORDER BY date ASC').all() as any[]).map(r => ({
+  getNxResults(dateStart?: string, dateEnd?: string): NxResultRow[] {
+    let sql = 'SELECT * FROM nx_results';
+    const params: string[] = [];
+    const conditions: string[] = [];
+    if (dateStart) { conditions.push('date >= ?'); params.push(dateStart); }
+    if (dateEnd) { conditions.push('date <= ?'); params.push(dateEnd); }
+    if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
+    sql += ' ORDER BY date DESC';
+    return (db.prepare(sql).all(...params) as any[]).map(r => ({
       id: r.id, date: r.date, year: r.year, quarter: r.quarter, date2: r.date2,
       tradeBalance: r.trade_balance, tradeBalancePctCh: r.trade_balance_pct_ch, nxResults: r.nx_results,
     }));
   },
 
-  getPiResults(): PiResultRow[] {
-    return (db.prepare('SELECT * FROM pi_results ORDER BY date ASC').all() as any[]).map(r => ({
+  getPiResults(dateStart?: string, dateEnd?: string): PiResultRow[] {
+    let sql = 'SELECT * FROM pi_results';
+    const params: string[] = [];
+    const conditions: string[] = [];
+    if (dateStart) { conditions.push('date >= ?'); params.push(dateStart); }
+    if (dateEnd) { conditions.push('date <= ?'); params.push(dateEnd); }
+    if (conditions.length) sql += ' WHERE ' + conditions.join(' AND ');
+    sql += ' ORDER BY date DESC';
+    return (db.prepare(sql).all(...params) as any[]).map(r => ({
       id: r.id, date: r.date, year: r.year, quarter: r.quarter, date2: r.date2,
       privateInventories: r.private_inventories,
     }));
@@ -175,5 +235,20 @@ export const ClientDataRepository = {
   getWeeklyTimeSeriesQuarters(): string[] {
     return (db.prepare('SELECT DISTINCT prediction_quarter FROM weekly_time_series ORDER BY prediction_quarter DESC').all() as any[])
       .map(r => r.prediction_quarter);
+  },
+
+  getAllQuarters(): string[] {
+    const quarters = new Set<string>();
+    (db.prepare("SELECT DISTINCT date2 FROM quarterly_time_series WHERE date2 != '' ORDER BY date2").all() as any[])
+      .forEach(r => quarters.add(r.date2));
+    (db.prepare("SELECT DISTINCT prediction_quarter FROM weekly_time_series ORDER BY prediction_quarter").all() as any[])
+      .forEach(r => quarters.add(r.prediction_quarter));
+    (db.prepare("SELECT DISTINCT date2 FROM nx_results WHERE date2 != '' ORDER BY date2").all() as any[])
+      .forEach(r => quarters.add(r.date2));
+    (db.prepare("SELECT DISTINCT date2 FROM pi_results WHERE date2 != '' ORDER BY date2").all() as any[])
+      .forEach(r => quarters.add(r.date2));
+    (db.prepare("SELECT DISTINCT date2 FROM academic_gdp WHERE date2 != '' ORDER BY date2").all() as any[])
+      .forEach(r => quarters.add(r.date2));
+    return Array.from(quarters).sort().reverse();
   },
 };

@@ -8,7 +8,8 @@ async function seedClientData() {
   const wtsCount = (db.prepare('SELECT COUNT(*) as c FROM weekly_time_series').get() as any).c;
   // Check if quarterly data already exists (weekly was seeded earlier)
   const qtsCount = (db.prepare('SELECT COUNT(*) as c FROM quarterly_time_series').get() as any).c;
-  if (qtsCount > 0 && wtsCount > 0) {
+  const agdpCount = (db.prepare('SELECT COUNT(*) as c FROM academic_gdp').get() as any).c;
+  if (qtsCount > 0 && wtsCount > 0 && agdpCount > 0) {
     console.log('Client product data already seeded, skipping.');
     return;
   }
@@ -27,6 +28,9 @@ async function seedClientData() {
     'Client Product Type 1(Weekly Financial Targets).csv',
     'Client Product Type 1(NX Results).csv',
     'Client Product Type 1(PI Results).csv',
+    'Client Product Type 2(Headline GDP).csv',
+    'Client Product Type 2(Core GDP).csv',
+    'Client Product Type 2(Nevada GDP).csv',
   ];
 
   for (const file of files) {

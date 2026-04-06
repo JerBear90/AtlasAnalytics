@@ -16,6 +16,7 @@ interface SidebarProps {
 }
 
 const RETAIL_DATA_TABS = [
+  { id: 'overview', label: 'Overview' },
   { id: 'quarterly', label: 'Quarterly Time Series' },
   { id: 'weekly', label: 'Weekly Time Series' },
   { id: 'financial', label: 'Financial Targets' },
@@ -27,6 +28,7 @@ const RETAIL_COMPONENT_TABS = [
 ];
 
 const ACADEMIC_DATA_TABS = [
+  { id: 'overview', label: 'Overview' },
   { id: 'headline_gdp', label: 'Headline GDP' },
   { id: 'core_gdp', label: 'Core GDP' },
   { id: 'state_gdp', label: 'State GDP' },
@@ -135,7 +137,7 @@ export default function Sidebar({
             <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">View As</div>
             <div className="flex bg-[#13131a] rounded-lg p-1 gap-1">
               <button
-                onClick={() => { setViewAsType(UserType.RETAIL); onTabChange?.('quarterly'); }}
+                onClick={() => { setViewAsType(UserType.RETAIL); onTabChange?.('overview'); }}
                 className={`flex-1 text-xs py-2 px-3 rounded-md font-medium transition cursor-pointer ${
                   viewAsType === UserType.RETAIL
                     ? 'bg-[#6c5dd3] text-white shadow-sm'
@@ -144,7 +146,7 @@ export default function Sidebar({
                 Retail
               </button>
               <button
-                onClick={() => { setViewAsType(UserType.ACADEMIC); onTabChange?.('headline_gdp'); }}
+                onClick={() => { setViewAsType(UserType.ACADEMIC); onTabChange?.('overview'); }}
                 className={`flex-1 text-xs py-2 px-3 rounded-md font-medium transition cursor-pointer ${
                   viewAsType === UserType.ACADEMIC
                     ? 'bg-[#198754] text-white shadow-sm'

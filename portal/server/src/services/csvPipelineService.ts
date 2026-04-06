@@ -10,7 +10,7 @@ import { IngestionRepository } from '../repositories/ingestionRepository';
 import { EconomicDataRepository } from '../repositories/economicDataRepository';
 import { ClientDataRepository } from '../repositories/clientDataRepository';
 
-type CsvFileType = 'generic' | 'weekly_time_series' | 'weekly_financial_targets' | 'nx_results' | 'pi_results' | 'quarterly_time_series';
+type CsvFileType = 'generic' | 'weekly_time_series' | 'weekly_financial_targets' | 'nx_results' | 'pi_results' | 'quarterly_time_series' | 'academic_gdp';
 
 function detectFileType(headers: string[]): CsvFileType {
   const h = headers.map(s => s.trim().toLowerCase());
@@ -18,7 +18,10 @@ function detectFileType(headers: string[]): CsvFileType {
   if (h.includes('date') && h.includes('trade balance') && h.includes('nx results')) return 'nx_results';
   if (h.includes('date') && h.includes('private inventories') && h.length <= 5 && !h.includes('trade balance')) return 'pi_results';
   if (h.some(c => c.includes('us gdp')) && h.some(c => c.includes('atlas predicted'))) return 'quarterly_time_series';
+  if (h.some(c => c.includes('bea actual')) && h.some(c => c.includes('atlas pred'))) return 'academic_gdp';
   if (h.includes('country_code') && h.includes('indicator_type')) return 'generic';
+  // If none matched but has Date/Year/Quarter, treat as academic GDP
+  if (h.includes('date') && h.includes('year') && h.includes('quarter') && !h.includes('trade balance') && !h.includes('private inventories')) return 'academic_gdp';
   return 'generic';
 }
 
@@ -140,6 +143,16 @@ export const CSVPipelineService = {
       return this.ingestFinancialTargets(content, filename, uploaderId);
     }
 
+    // Check for non-tabular files (Support, Contents, etc.) — skip gracefully
+    const lowerFilename = filename.toLowerCase();
+    if (lowerFilename.includes('support') || lowerFilename.includes('disclaimer') || lowerFilename.includes('contents')) {
+      // Store as ingestion record but don't try to parse as data
+      const ingestionId = await IngestionRepository.create({
+        filename, uploaderId, totalRows: 0, validRows: 0, invalidRows: 0, errors: [],
+      });
+      return { success: true, totalRows: 0, validRows: 0, invalidRows: 0, errors: [], ingestionId };
+    }
+
     // Parse CSV
     let rows: Record<string, string>[];
     try {
@@ -165,6 +178,8 @@ export const CSVPipelineService = {
         return this.ingestWeeklyTimeSeries(rows, filename, uploaderId);
       case 'quarterly_time_series':
         return this.ingestQuarterlyTimeSeries(rows, filename, uploaderId);
+      case 'academic_gdp':
+        return this.ingestAcademicGdp(rows, filename, uploaderId);
       case 'nx_results':
         return this.ingestNxResults(rows, filename, uploaderId);
       case 'pi_results':
@@ -287,6 +302,52 @@ export const CSVPipelineService = {
 
     if (validRows.length > 0) {
       ClientDataRepository.bulkInsertQuarterlyTimeSeries(ingestionId, validRows);
+    }
+
+    return {
+      success: true, totalRows: rows.length,
+      validRows: validRows.length, invalidRows: rows.length - validRows.length,
+      errors: [], ingestionId,
+    };
+  },
+
+  async ingestAcademicGdp(
+    rows: Record<string, string>[],
+    filename: string,
+    uploaderId: string
+  ): Promise<IngestionResult> {
+    // Determine the GDP type from filename
+    const lowerName = filename.toLowerCase();
+    let gdpType = 'headline';
+    if (lowerName.includes('core')) gdpType = 'core';
+    else if (lowerName.includes('nevada') || lowerName.includes('state')) gdpType = 'state';
+
+    const validRows: any[] = [];
+    for (const r of rows) {
+      const date = (r['Date'] || '').trim();
+      if (!date) continue;
+      const keys = Object.keys(r);
+      const beaKey = keys.find(k => k.toLowerCase().includes('bea actual')) || 'BEA Actual';
+      const atlasKey = keys.find(k => k.toLowerCase().includes('atlas pred')) || 'Atlas Predicitions';
+      const date2Key = keys.find(k => k.toLowerCase().includes('date 2') || k.toLowerCase() === 'date2') || 'Date 2';
+      validRows.push({
+        gdpType,
+        date,
+        year: parseInt(r['Year']) || 0,
+        quarter: parseInt(r['Quarter']) || 0,
+        date2: (r[date2Key] || '').trim(),
+        beaActual: (r[beaKey] || '').trim(),
+        atlasPredicted: (r[atlasKey] || '').trim(),
+      });
+    }
+
+    const ingestionId = await IngestionRepository.create({
+      filename, uploaderId, totalRows: rows.length,
+      validRows: validRows.length, invalidRows: rows.length - validRows.length, errors: [],
+    });
+
+    if (validRows.length > 0) {
+      ClientDataRepository.bulkInsertAcademicGdp(ingestionId, validRows);
     }
 
     return {

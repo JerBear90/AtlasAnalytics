@@ -1,12 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import api from '../api/client';
-import { IngestionResult, IngestionRecord } from '../types';
+import { IngestionRecord } from '../types';
+
+interface UploadResult {
+  filename: string;
+  success: boolean;
+  totalRows: number;
+  validRows: number;
+  invalidRows: number;
+  error?: string;
+  errors?: { row: number; column: string; message: string; value: string }[];
+}
 
 export default function AdminCsvUploadPage() {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [result, setResult] = useState<IngestionResult | null>(null);
+  const [results, setResults] = useState<UploadResult[]>([]);
   const [error, setError] = useState('');
   const [history, setHistory] = useState<IngestionRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -22,20 +33,39 @@ export default function AdminCsvUploadPage() {
 
   useEffect(() => { fetchHistory(); }, []);
 
+  const handleFileChange = () => {
+    const files = fileRef.current?.files;
+    if (files) setSelectedFiles(Array.from(files));
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
   const handleUpload = async () => {
-    const file = fileRef.current?.files?.[0];
-    if (!file) return;
-    setUploading(true); setResult(null); setError('');
+    if (selectedFiles.length === 0) return;
+    setUploading(true); setResults([]); setError('');
     try {
-      const form = new FormData();
-      form.append('file', file);
-      const { data } = await api.post('/csv/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setResult(data);
+      if (selectedFiles.length === 1) {
+        const form = new FormData();
+        form.append('file', selectedFiles[0]);
+        const { data } = await api.post('/csv/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+        setResults([{ filename: selectedFiles[0].name, ...data }]);
+      } else {
+        const form = new FormData();
+        for (const file of selectedFiles) {
+          form.append('files', file);
+        }
+        const { data } = await api.post('/csv/upload-multiple', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+        setResults(data.results || []);
+      }
       fetchHistory();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Upload failed.');
     } finally {
       setUploading(false);
+      setSelectedFiles([]);
       if (fileRef.current) fileRef.current.value = '';
     }
   };
@@ -50,34 +80,53 @@ export default function AdminCsvUploadPage() {
       <div className="bg-[#1e1e2f] rounded-xl p-6 border border-[#2d2d44] space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
           <div className="flex-1">
-            <label className="block text-[11px] uppercase text-[#a0a0b0] mb-1.5 tracking-[1px] font-semibold">Select CSV file</label>
-            <input ref={fileRef} type="file" accept=".csv"
+            <label className="block text-[11px] uppercase text-[#a0a0b0] mb-1.5 tracking-[1px] font-semibold">Select CSV files</label>
+            <input ref={fileRef} type="file" accept=".csv" multiple onChange={handleFileChange}
               className="block w-full text-sm text-[#a0a0b0] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-[#6c5dd3] file:text-white hover:file:bg-[#6c5dd3]/90 file:cursor-pointer" />
           </div>
-          <button onClick={handleUpload} disabled={uploading}
-            className="px-5 py-2.5 bg-[#6c5dd3] hover:bg-[#6c5dd3]/90 disabled:opacity-50 text-white text-sm font-medium rounded-md transition whitespace-nowrap">
-            {uploading ? 'Uploading...' : 'Upload & Process'}
+          <button onClick={handleUpload} disabled={uploading || selectedFiles.length === 0}
+            className="px-5 py-2.5 bg-[#6c5dd3] hover:bg-[#6c5dd3]/90 disabled:opacity-50 text-white text-sm font-medium rounded-md transition whitespace-nowrap cursor-pointer">
+            {uploading ? 'Uploading...' : `Upload & Process${selectedFiles.length > 1 ? ` (${selectedFiles.length} files)` : ''}`}
           </button>
         </div>
 
+        {selectedFiles.length > 0 && (
+          <div className="space-y-1">
+            {selectedFiles.map((f, i) => (
+              <div key={i} className="flex items-center justify-between bg-[#181824] rounded-lg px-3 py-2 text-sm">
+                <span className="text-white">{f.name}</span>
+                <button onClick={() => removeFile(i)} className="text-[#a0a0b0] hover:text-[#dc3545] text-xs cursor-pointer">✕</button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {error && <div className="bg-[rgba(220,53,69,0.1)] border border-[#dc3545] text-[#dc3545] px-4 py-3 rounded-lg text-sm">{error}</div>}
 
-        {result && (
-          <div className={`rounded-lg p-4 text-sm ${result.success ? 'bg-[rgba(25,135,84,0.1)] border border-[#198754] text-[#198754]' : 'bg-[rgba(253,126,20,0.1)] border border-[#fd7e14] text-[#fd7e14]'}`}>
-            <p className="font-medium mb-2">{result.success ? 'All rows valid' : 'Completed with errors'}</p>
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              <div>Total: {result.totalRows}</div>
-              <div>Valid: {result.validRows}</div>
-              <div>Invalid: {result.invalidRows}</div>
-            </div>
-            {result.errors.length > 0 && (
-              <div className="mt-3 max-h-40 overflow-y-auto space-y-1">
-                {result.errors.slice(0, 20).map((e, i) => (
-                  <div key={i} className="text-xs">Row {e.row}, {e.column}: {e.message} (value: "{e.value}")</div>
-                ))}
-                {result.errors.length > 20 && <div className="text-xs text-[#a0a0b0]">...and {result.errors.length - 20} more</div>}
+        {results.length > 0 && (
+          <div className="space-y-2">
+            {results.map((r, i) => (
+              <div key={i} className={`rounded-lg p-4 text-sm ${r.success ? 'bg-[rgba(25,135,84,0.1)] border border-[#198754] text-[#198754]' : r.error ? 'bg-[rgba(220,53,69,0.1)] border border-[#dc3545] text-[#dc3545]' : 'bg-[rgba(253,126,20,0.1)] border border-[#fd7e14] text-[#fd7e14]'}`}>
+                <p className="font-medium mb-1">{r.filename}</p>
+                {r.error ? (
+                  <p className="text-xs">{r.error}</p>
+                ) : (
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>Total: {r.totalRows}</div>
+                    <div>Valid: {r.validRows}</div>
+                    <div>Invalid: {r.invalidRows}</div>
+                  </div>
+                )}
+                {r.errors && r.errors.length > 0 && (
+                  <div className="mt-2 max-h-32 overflow-y-auto space-y-1">
+                    {r.errors.slice(0, 10).map((e, j) => (
+                      <div key={j} className="text-xs">Row {e.row}, {e.column}: {e.message}</div>
+                    ))}
+                    {r.errors.length > 10 && <div className="text-xs opacity-70">...and {r.errors.length - 10} more</div>}
+                  </div>
+                )}
               </div>
-            )}
+            ))}
           </div>
         )}
       </div>

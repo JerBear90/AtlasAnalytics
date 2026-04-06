@@ -101,6 +101,19 @@ function migrate() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS academic_gdp (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      ingestion_id TEXT NOT NULL,
+      gdp_type TEXT NOT NULL,
+      date TEXT NOT NULL,
+      year INTEGER NOT NULL,
+      quarter INTEGER NOT NULL,
+      date2 TEXT NOT NULL,
+      bea_actual TEXT,
+      atlas_predicted TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS weekly_time_series (
       id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
       ingestion_id TEXT NOT NULL,

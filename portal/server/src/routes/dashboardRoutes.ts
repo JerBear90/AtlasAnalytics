@@ -37,6 +37,11 @@ router.get('/client-data/:tab', async (req: Request, res: Response) => {
         res.json({ rows });
         return;
       }
+      case 'quarterly': {
+        const rows = ClientDataRepository.getQuarterlyTimeSeries();
+        res.json({ rows });
+        return;
+      }
       default:
         res.status(400).json({ error: 'Unknown tab: ' + tab });
     }

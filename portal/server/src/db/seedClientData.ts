@@ -6,7 +6,9 @@ import { CSVPipelineService } from '../services/csvPipelineService';
 async function seedClientData() {
   // Check if data already exists
   const wtsCount = (db.prepare('SELECT COUNT(*) as c FROM weekly_time_series').get() as any).c;
-  if (wtsCount > 0) {
+  // Check if quarterly data already exists (weekly was seeded earlier)
+  const qtsCount = (db.prepare('SELECT COUNT(*) as c FROM quarterly_time_series').get() as any).c;
+  if (qtsCount > 0 && wtsCount > 0) {
     console.log('Client product data already seeded, skipping.');
     return;
   }
@@ -20,6 +22,7 @@ async function seedClientData() {
 
   const sampleDir = path.join(__dirname, '..', '..', '..', 'data');
   const files = [
+    'Client Product Type 1(Quarterly Time Series).csv',
     'Client Product Type 1(Weekly Time Series).csv',
     'Client Product Type 1(Weekly Financial Targets).csv',
     'Client Product Type 1(NX Results).csv',

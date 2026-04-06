@@ -89,6 +89,18 @@ function migrate() {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS quarterly_time_series (
+      id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+      ingestion_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      year INTEGER NOT NULL,
+      quarter INTEGER NOT NULL,
+      date2 TEXT NOT NULL,
+      us_gdp TEXT,
+      atlas_predicted TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS weekly_time_series (
       id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
       ingestion_id TEXT NOT NULL,

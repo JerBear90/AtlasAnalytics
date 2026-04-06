@@ -80,9 +80,20 @@ Production URL: `https://portal.atlasanalytics.com`
 
 ## Tech Stack
 
-| Layer    | Technology                                        |
-|----------|---------------------------------------------------|
-| Frontend | React 18, TypeScript, Vite, Tailwind CSS, Chart.js |
+| Layer       | Technology                                                     |
+|-------------|----------------------------------------------------------------|
+| Frontend    | React 18, TypeScript, Vite, Tailwind CSS, Chart.js, Axios      |
+| Backend     | Node.js, Express, TypeScript                                    |
+| Database    | SQLite (better-sqlite3)                                         |
+| Auth        | JWT (jsonwebtoken), bcrypt.js, Google OAuth 2.0 (Passport.js)   |
+| CSV Parsing | csv-parse                                                       |
+| File Upload | Multer                                                          |
+| Routing     | React Router v6                                                 |
+| HTTP        | Axios (client), CORS (server)                                   |
+| Testing     | Jest, ts-jest, fast-check (property-based)                      |
+| Build       | Vite (client), tsc (server)                                     |
+| Deploy      | Docker, nginx, Railway                                          |
+| SSL         | Caddy (auto Let's Encrypt) or Certbot                           |
 | Backend  | Express, TypeScript, better-sqlite3                |
 | Auth     | JWT, bcrypt, Google OAuth 2.0                      |
 | Testing  | Jest, fast-check (property-based)                  |

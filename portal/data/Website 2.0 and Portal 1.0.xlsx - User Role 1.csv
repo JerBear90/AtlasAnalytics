@@ -1,0 +1,12 @@
+,,,,
+Weekly Time Series,Quarterly Time Series,Weekly Financial Targets,NX Results,PI Results
+Prediction Year-Quarter,Date,ETF (List of tickers),Date,Date
+Date,Year,Target Price,Year,Year
+Year,Quarter,Trading Price (Market close price),Quarter,Quarter
+Day of the Week,Date2,Deviation,Date2,Date2
+Month,US GDP (SAAR),,Trade Balance,Private Inventories
+Core GDP,Atlas Predicted (SAAR),,Trade Balance (% Ch),
+Core GDP Updated,,,NX Results,
+Net Exports,,,,
+Private Inventories,,,,
+GDP,,,,

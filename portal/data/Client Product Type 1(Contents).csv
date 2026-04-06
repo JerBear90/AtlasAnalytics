@@ -1,0 +1,42 @@
+,,
+Date,"Monday, March 30, 2026",
+Company,"Atlas Analytics, Inc.",
+Subscriber,Client,
+,,
+Workbook Description,,
+"This workbook contains a collection of key economic and financial datasets compiled by Atlas Analytics, Inc. for internal analysis and strategic planning purposes. The contents are organized into separate sheets and include the following:
+
+- Quarterly Time Series GDP: Historical and current gross domestic product (GDP) data reported on a quarterly basis, reflecting overall economic activity and growth trends.
+- Weekly Time Series GDP: High-frequency estimates of GDP, providing a more granular view of economic performance on a weekly basis.
+- Weekly Financial Targets: Internal financial benchmarks and performance targets tracked weekly, used to support forecasting and decision-making.
+- Quarterly Net Exports Data: Data on net exports (exports minus imports) by quarter, offering insight into trade balances and their contribution to GDP.
+- Quarterly Private Inventories Data: Data on private inventories, by quarter as a contribution to GDP.
+
+Each dataset is structured for ease of reference and may include accompanying charts or formulas for visualization and analysis.",,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+Sheet Name,Description,Type
+Contents,Summary contents table,Contents
+Quarterly Time Series,Quarterly time-series data: Actual and Atlas predicted GDP,Data
+Weekly Time Series,Weekly time-series data: Atlas predicted GDP broken down into sub-component,Data
+Weekly Financial Targets,Weekly time-series data: Atlas financial market targets,Data
+NX Results,Quarterly time-series data:Atlas predicted Net Exports (trade balance),Data
+PI Results,Quarterly time-series data:Atlas predicted Private Inventories,Data
+,,
+,,
+"This Excel workbook and all data, analysis, and content contained herein (“Workbook”) are confidential and intended solely for the use of the authorized recipient. No part of this Workbook may be copied, reproduced, distributed, or shared in any form or by any means without the prior written consent of Atlas Analytics, Inc. Atlas Analytics, Inc. makes no representations or warranties, express or implied, as to the accuracy, completeness, or reliability of the data or analysis contained in this Workbook. All information is provided “as is” and is subject to change without notice. Use of this Workbook is at the user’s own risk, and Atlas Analytics, Inc. disclaims any liability for any loss or damage arising from reliance on the contents of this Workbook.",,
+,,
+,,
+,,
+,,

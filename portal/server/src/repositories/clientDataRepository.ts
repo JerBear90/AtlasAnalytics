@@ -1,6 +1,16 @@
 import db from '../db/pool';
 import crypto from 'crypto';
 
+export interface QuarterlyTimeSeriesRow {
+  id: string;
+  date: string;
+  year: number;
+  quarter: number;
+  date2: string;
+  usGdp: string;
+  atlasPredicted: string;
+}
+
 export interface WeeklyTimeSeriesRow {
   id: string;
   predictionQuarter: string;
@@ -45,6 +55,28 @@ export interface PiResultRow {
 }
 
 export const ClientDataRepository = {
+  bulkInsertQuarterlyTimeSeries(ingestionId: string, rows: Omit<QuarterlyTimeSeriesRow, 'id'>[]): number {
+    const insert = db.prepare(
+      `INSERT INTO quarterly_time_series (id, ingestion_id, date, year, quarter, date2, us_gdp, atlas_predicted)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    );
+    const tx = db.transaction(() => {
+      for (const r of rows) {
+        insert.run(crypto.randomBytes(16).toString('hex'), ingestionId,
+          r.date, r.year, r.quarter, r.date2, r.usGdp, r.atlasPredicted);
+      }
+    });
+    tx();
+    return rows.length;
+  },
+
+  getQuarterlyTimeSeries(): QuarterlyTimeSeriesRow[] {
+    return (db.prepare('SELECT * FROM quarterly_time_series ORDER BY date ASC').all() as any[]).map(r => ({
+      id: r.id, date: r.date, year: r.year, quarter: r.quarter, date2: r.date2,
+      usGdp: r.us_gdp || '', atlasPredicted: r.atlas_predicted || '',
+    }));
+  },
+
   bulkInsertWeeklyTimeSeries(ingestionId: string, rows: Omit<WeeklyTimeSeriesRow, 'id'>[]): number {
     const insert = db.prepare(
       `INSERT INTO weekly_time_series (id, ingestion_id, prediction_quarter, date, year, day_of_week, month, core_gdp, core_gdp_updated, net_exports, private_inventories, gdp)

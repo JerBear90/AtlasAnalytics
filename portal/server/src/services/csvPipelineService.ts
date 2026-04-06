@@ -10,13 +10,14 @@ import { IngestionRepository } from '../repositories/ingestionRepository';
 import { EconomicDataRepository } from '../repositories/economicDataRepository';
 import { ClientDataRepository } from '../repositories/clientDataRepository';
 
-type CsvFileType = 'generic' | 'weekly_time_series' | 'weekly_financial_targets' | 'nx_results' | 'pi_results';
+type CsvFileType = 'generic' | 'weekly_time_series' | 'weekly_financial_targets' | 'nx_results' | 'pi_results' | 'quarterly_time_series';
 
 function detectFileType(headers: string[]): CsvFileType {
   const h = headers.map(s => s.trim().toLowerCase());
   if (h.includes('prediction year-quarter') && h.includes('core gdp')) return 'weekly_time_series';
   if (h.includes('date') && h.includes('trade balance') && h.includes('nx results')) return 'nx_results';
   if (h.includes('date') && h.includes('private inventories') && h.length <= 5 && !h.includes('trade balance')) return 'pi_results';
+  if (h.some(c => c.includes('us gdp')) && h.some(c => c.includes('atlas predicted'))) return 'quarterly_time_series';
   if (h.includes('country_code') && h.includes('indicator_type')) return 'generic';
   return 'generic';
 }
@@ -162,6 +163,8 @@ export const CSVPipelineService = {
     switch (fileType) {
       case 'weekly_time_series':
         return this.ingestWeeklyTimeSeries(rows, filename, uploaderId);
+      case 'quarterly_time_series':
+        return this.ingestQuarterlyTimeSeries(rows, filename, uploaderId);
       case 'nx_results':
         return this.ingestNxResults(rows, filename, uploaderId);
       case 'pi_results':
@@ -251,6 +254,45 @@ export const CSVPipelineService = {
       success: allErrors.length === 0, totalRows: rows.length,
       validRows: validRows.length, invalidRows: allErrors.length,
       errors: allErrors, ingestionId,
+    };
+  },
+
+  async ingestQuarterlyTimeSeries(
+    rows: Record<string, string>[],
+    filename: string,
+    uploaderId: string
+  ): Promise<IngestionResult> {
+    const validRows: any[] = [];
+    for (const r of rows) {
+      const date = (r['Date'] || '').trim();
+      if (!date) continue;
+      // Find the GDP columns (headers may vary slightly)
+      const keys = Object.keys(r);
+      const gdpKey = keys.find(k => k.toLowerCase().includes('us gdp')) || 'US GDP (SAAR)';
+      const atlasKey = keys.find(k => k.toLowerCase().includes('atlas predicted')) || 'Atlas Predicted (SAAR)';
+      validRows.push({
+        date,
+        year: parseInt(r['Year']) || 0,
+        quarter: parseInt(r['Quarter']) || 0,
+        date2: (r['Date2'] || '').trim(),
+        usGdp: (r[gdpKey] || '').trim(),
+        atlasPredicted: (r[atlasKey] || '').trim(),
+      });
+    }
+
+    const ingestionId = await IngestionRepository.create({
+      filename, uploaderId, totalRows: rows.length,
+      validRows: validRows.length, invalidRows: rows.length - validRows.length, errors: [],
+    });
+
+    if (validRows.length > 0) {
+      ClientDataRepository.bulkInsertQuarterlyTimeSeries(ingestionId, validRows);
+    }
+
+    return {
+      success: true, totalRows: rows.length,
+      validRows: validRows.length, invalidRows: rows.length - validRows.length,
+      errors: [], ingestionId,
     };
   },
 

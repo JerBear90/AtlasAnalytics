@@ -29,7 +29,7 @@ export default function DashboardPage() {
   const [clientData, setClientData] = useState<{ headers: string[]; rows: (string | number)[][] } | null>(null);
   const [clientLoading, setClientLoading] = useState(false);
 
-  const isClientTab = ['weekly', 'financial', 'exports', 'inventories'].includes(activeTab);
+  const isClientTab = ['weekly', 'financial', 'exports', 'inventories', 'quarterly'].includes(activeTab);
   const isPortalTab = ['contents', 'insights', 'support'].includes(activeTab);
 
   const fetchFilters = useCallback(async () => {
@@ -67,7 +67,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!isClientTab) { setClientData(null); return; }
     const tabToEndpoint: Record<string, string> = {
-      weekly: 'weekly', financial: 'financial', exports: 'nx', inventories: 'pi',
+      weekly: 'weekly', financial: 'financial', exports: 'nx', inventories: 'pi', quarterly: 'quarterly',
     };
     const endpoint = tabToEndpoint[activeTab];
     if (!endpoint) return;
@@ -111,6 +111,14 @@ export default function DashboardPage() {
           ]);
           setClientData({
             headers: ['Date', 'Year', 'Quarter', 'Date2', 'Private Inventories'],
+            rows,
+          });
+        } else if (endpoint === 'quarterly') {
+          const rows = (d.rows || []).map((r: any) => [
+            r.date, r.year, r.quarter, r.date2, r.usGdp || '', r.atlasPredicted || '',
+          ]);
+          setClientData({
+            headers: ['Date', 'Year', 'Quarter', 'Date2', 'US GDP (SAAR)', 'Atlas Predicted (SAAR)'],
             rows,
           });
         }
@@ -377,8 +385,8 @@ export default function DashboardPage() {
 
       {isClientTab && !clientLoading && (!clientData || clientData.rows.length === 0) && (
         <div className="text-center py-20 text-[#a0a0b0]">
-          <p className="text-lg">No data available yet</p>
-          <p className="text-sm mt-2">Upload the corresponding CSV file from Admin &gt; CSV Upload.</p>
+          <p className="text-lg">No data available for this section</p>
+          <p className="text-sm mt-2">Upload the corresponding CSV file from Admin &gt; CSV Upload to populate this view.</p>
         </div>
       )}
 

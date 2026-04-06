@@ -25,7 +25,7 @@ function aggregate(labels: string[], data: number[], mode: ViewMode): { labels: 
         key = `${p[2]}-${p[0].padStart(2, '0')}`;
       } else if (label.match(/\d{4}\s*Q\d/)) key = label; // quarterly labels stay as-is
     } else if (mode === 'yearly') {
-      // Extract year
+      // Extract year from "2020 Q2", "2020-01-01", "1/15/2020", etc.
       const yearMatch = label.match(/(\d{4})/);
       key = yearMatch ? yearMatch[1] : label;
     }
@@ -47,8 +47,8 @@ function aggregate(labels: string[], data: number[], mode: ViewMode): { labels: 
 export default function LineChart({ dataset, bare }: { dataset: ChartDataSet; bare?: boolean }) {
   // Detect data granularity
   const hasWeeklyDates = dataset.labels.some(l => l.match(/^\d{1,2}\/\d{1,2}\/\d{4}/));
-  const hasQuarterlyLabels = dataset.labels.some(l => l.match(/Q\d/));
-  const isWeeklyGranularity = hasWeeklyDates || dataset.labels.length > 20;
+  const hasQuarterlyLabels = dataset.labels.some(l => l.match(/Q\d/i));
+  const isWeeklyGranularity = hasWeeklyDates && !hasQuarterlyLabels;
 
   const modes: { key: ViewMode; label: string }[] = isWeeklyGranularity
     ? [{ key: 'raw', label: 'Weekly' }, { key: 'monthly', label: 'Monthly' }]

@@ -90,7 +90,7 @@ export function requireSuperAdmin(req: Request, res: Response, next: NextFunctio
     return;
   }
 
-  if (req.user.role !== UserRole.SUPER_ADMIN) {
+  if ((req.user as any).role !== UserRole.SUPER_ADMIN) {
     res.status(403).json({ error: 'Super Admin access required.' });
     return;
   }

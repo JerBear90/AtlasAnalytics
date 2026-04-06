@@ -5,37 +5,59 @@ import { ChartDataSet } from '../../types';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-function aggregateMonthly(labels: string[], data: number[]): { labels: string[]; data: number[] } {
-  const monthMap = new Map<string, number[]>();
+type ViewMode = 'raw' | 'monthly' | 'yearly';
+
+function aggregate(labels: string[], data: number[], mode: ViewMode): { labels: string[]; data: number[] } {
+  if (mode === 'raw') return { labels, data };
+
+  const bucketMap = new Map<string, number[]>();
   for (let i = 0; i < labels.length; i++) {
-    // Try to extract YYYY-MM or just use the label as-is for quarterly data
-    const label = labels[i];
-    let monthKey = label;
-    if (label.match(/^\d{4}-\d{2}/)) {
-      monthKey = label.substring(0, 7); // YYYY-MM
-    } else if (label.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)) {
-      const parts = label.split('/');
-      monthKey = `${parts[2]}-${parts[0].padStart(2, '0')}`;
+    const val = data[i];
+    if (val == null || isNaN(val)) continue;
+    const label = labels[i] || '';
+    let key = label;
+
+    if (mode === 'monthly') {
+      // Try YYYY-MM from various date formats
+      if (label.match(/^\d{4}-\d{2}/)) key = label.substring(0, 7);
+      else if (label.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)) {
+        const p = label.split('/');
+        key = `${p[2]}-${p[0].padStart(2, '0')}`;
+      } else if (label.match(/\d{4}\s*Q\d/)) key = label; // quarterly labels stay as-is
+    } else if (mode === 'yearly') {
+      // Extract year
+      const yearMatch = label.match(/(\d{4})/);
+      key = yearMatch ? yearMatch[1] : label;
     }
-    const existing = monthMap.get(monthKey) || [];
-    if (data[i] != null && !isNaN(data[i])) existing.push(data[i]);
-    monthMap.set(monthKey, existing);
+
+    const existing = bucketMap.get(key) || [];
+    existing.push(val);
+    bucketMap.set(key, existing);
   }
+
   const aggLabels: string[] = [];
   const aggData: number[] = [];
-  for (const [key, vals] of monthMap) {
+  for (const [key, vals] of bucketMap) {
     aggLabels.push(key);
-    aggData.push(vals.length > 0 ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100 : 0);
+    aggData.push(Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 100) / 100);
   }
   return { labels: aggLabels, data: aggData };
 }
 
 export default function LineChart({ dataset, bare }: { dataset: ChartDataSet; bare?: boolean }) {
-  const [view, setView] = useState<'weekly' | 'monthly'>('weekly');
+  // Detect data granularity
+  const hasWeeklyDates = dataset.labels.some(l => l.match(/^\d{1,2}\/\d{1,2}\/\d{4}/));
+  const hasQuarterlyLabels = dataset.labels.some(l => l.match(/Q\d/));
+  const isWeeklyGranularity = hasWeeklyDates || dataset.labels.length > 20;
 
-  const displayData = view === 'monthly'
-    ? aggregateMonthly(dataset.labels, dataset.data)
-    : { labels: dataset.labels, data: dataset.data };
+  const modes: { key: ViewMode; label: string }[] = isWeeklyGranularity
+    ? [{ key: 'raw', label: 'Weekly' }, { key: 'monthly', label: 'Monthly' }]
+    : hasQuarterlyLabels
+    ? [{ key: 'raw', label: 'Quarterly' }, { key: 'yearly', label: 'Yearly' }]
+    : [{ key: 'raw', label: 'All' }, { key: 'yearly', label: 'Yearly' }];
+
+  const [view, setView] = useState<ViewMode>('raw');
+  const displayData = aggregate(dataset.labels, dataset.data, view);
 
   const btnClass = (active: boolean) =>
     `px-2.5 py-1 rounded-md text-xs cursor-pointer transition ${active ? 'bg-[#6c5dd3] text-white' : 'bg-transparent border border-[#2d2d44] text-[#a0a0b0] hover:text-white'}`;
@@ -45,8 +67,9 @@ export default function LineChart({ dataset, bare }: { dataset: ChartDataSet; ba
       <div className="flex justify-between items-center mb-5 flex-wrap gap-2">
         {!bare && <div className="text-base font-semibold text-white">{dataset.label}</div>}
         <div className={`flex gap-2 ${bare ? 'ml-auto' : ''}`}>
-          <button onClick={() => setView('weekly')} className={btnClass(view === 'weekly')}>Weekly</button>
-          <button onClick={() => setView('monthly')} className={btnClass(view === 'monthly')}>Monthly</button>
+          {modes.map(m => (
+            <button key={m.key} onClick={() => setView(m.key)} className={btnClass(view === m.key)}>{m.label}</button>
+          ))}
         </div>
       </div>
       <div className="relative h-[350px]">
@@ -79,7 +102,6 @@ export default function LineChart({ dataset, bare }: { dataset: ChartDataSet; ba
               y: { ticks: { color: '#a0a0b0' }, grid: { color: '#2d2d44' } },
             },
             layout: { padding: { right: 10 } },
-            clip: false as any,
           }}
         />
       </div>

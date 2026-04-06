@@ -247,7 +247,7 @@ export default function Sidebar({
         {isAdmin && (
           <div className="mb-6">
             <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Admin</div>
-            {navItem('/admin/csv', 'CSV Upload')}
+            {isSuperAdmin && navItem('/admin/csv', 'CSV Upload')}
             {navItem('/admin/users', 'User Management')}
           </div>
         )}

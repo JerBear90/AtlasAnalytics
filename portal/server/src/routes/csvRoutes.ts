@@ -1,16 +1,16 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import { authMiddleware } from '../middleware/authMiddleware';
-import { requireAdmin } from '../middleware/roleMiddleware';
+import { requireSuperAdmin } from '../middleware/roleMiddleware';
 import { CSVPipelineService, CSVPipelineError } from '../services/csvPipelineService';
 import { IngestionRepository } from '../repositories/ingestionRepository';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-// All CSV routes require auth + admin
+// All CSV routes require auth + super admin
 router.use(authMiddleware);
-router.use(requireAdmin);
+router.use(requireSuperAdmin);
 
 // POST /api/csv/upload (single file - kept for backward compatibility)
 router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {

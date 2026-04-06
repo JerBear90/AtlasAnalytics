@@ -80,3 +80,20 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
 
   next();
 }
+
+/**
+ * Middleware: require Super Admin role
+ */
+export function requireSuperAdmin(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user) {
+    res.status(401).json({ error: 'Authentication required.' });
+    return;
+  }
+
+  if (req.user.role !== UserRole.SUPER_ADMIN) {
+    res.status(403).json({ error: 'Super Admin access required.' });
+    return;
+  }
+
+  next();
+}

@@ -227,9 +227,11 @@ export default function DashboardPage() {
             )}
           </h1>
         </div>
-        <div className="flex gap-2.5">
-          <ExportButton filters={filters} />
-        </div>
+        {isClientTab && (
+          <div className="flex gap-2.5">
+            <ExportButton filters={filters} />
+          </div>
+        )}
       </div>
 
       {/* Overview Tab */}

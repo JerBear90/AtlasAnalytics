@@ -173,11 +173,6 @@ export default function Sidebar({
               </div>
             )}
 
-            <div className="mb-6">
-              <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Portal</div>
-              {PORTAL_TABS.map(tabItem)}
-            </div>
-
             {/* Filters */}
             {filterOptions && (
               <div className="mb-6">
@@ -233,6 +228,11 @@ export default function Sidebar({
                 </div>
               </div>
             )}
+
+            <div className="mb-6">
+              <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Portal</div>
+              {PORTAL_TABS.map(tabItem)}
+            </div>
           </>
         )}
 

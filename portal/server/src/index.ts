@@ -92,21 +92,26 @@ app.listen(PORT, async () => {
   try {
     const db = require('./db/pool').default;
     const count = (db.prepare('SELECT COUNT(*) as c FROM users').get() as any).c;
+    console.log('[seed] User count:', count);
     if (count === 0) {
       const bcrypt = require('bcryptjs');
       const crypto = require('crypto');
       const adminEmail = process.env.ADMIN_EMAIL || 'super@atlas.com';
       const adminPassword = process.env.ADMIN_PASSWORD || 'changeme123';
+      console.log('[seed] Starting auto-seed with email:', adminEmail);
+      console.log('[seed] Admin password source:', process.env.ADMIN_PASSWORD ? 'ADMIN_PASSWORD env var' : 'default fallback');
       const pw = await bcrypt.hash(adminPassword, 12);
       const id = crypto.randomBytes(16).toString('hex');
       const now = new Date().toISOString();
       db.prepare(
         'INSERT OR IGNORE INTO users (id,name,email,password_hash,role,user_type,company,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)'
       ).run(id, 'Super Admin', adminEmail, pw, 'super_admin', 'retail', 'Atlas Analytics, Inc.', now, now);
-      console.log(`Super admin created: ${adminEmail}`);
+      console.log('[seed] Super admin created successfully');
+    } else {
+      console.log('[seed] Users already exist, skipping seed');
     }
   } catch (err) {
-    console.error('Auto-seed failed:', err);
+    console.error('[seed] Auto-seed failed:', err);
   }
 });
 

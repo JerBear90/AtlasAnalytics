@@ -100,6 +100,8 @@ app.listen(PORT, async () => {
     console.log('[seed] Existing users cleared');
     console.log('[seed] Starting auto-seed with email:', adminEmail);
     console.log('[seed] Admin password source:', process.env.ADMIN_PASSWORD ? 'ADMIN_PASSWORD env var' : 'default fallback');
+    console.log('[seed] Admin password length:', adminPassword.length);
+    console.log('[seed] Admin password first/last:', adminPassword[0], adminPassword[adminPassword.length-1]);
     const pw = await bcrypt.hash(adminPassword, 12);
     const id = crypto.randomBytes(16).toString('hex');
     const now = new Date().toISOString();

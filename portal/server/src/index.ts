@@ -81,8 +81,29 @@ app.use((_req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Atlas Portal API running on port ${PORT}`);
+
+  // Auto-seed super admin if no users exist
+  try {
+    const db = require('./db/pool').default;
+    const count = (db.prepare('SELECT COUNT(*) as c FROM users').get() as any).c;
+    if (count === 0) {
+      const bcrypt = require('bcryptjs');
+      const crypto = require('crypto');
+      const adminEmail = process.env.ADMIN_EMAIL || 'super@atlas.com';
+      const adminPassword = process.env.ADMIN_PASSWORD || 'changeme123';
+      const pw = await bcrypt.hash(adminPassword, 12);
+      const id = crypto.randomBytes(16).toString('hex');
+      const now = new Date().toISOString();
+      db.prepare(
+        'INSERT OR IGNORE INTO users (id,name,email,password_hash,role,user_type,company,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)'
+      ).run(id, 'Super Admin', adminEmail, pw, 'super_admin', 'retail', 'Atlas Analytics, Inc.', now, now);
+      console.log(`Super admin created: ${adminEmail}`);
+    }
+  } catch (err) {
+    console.error('Auto-seed failed:', err);
+  }
 });
 
 export default app;

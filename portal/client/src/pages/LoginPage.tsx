@@ -38,6 +38,8 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
+      console.log('LoginPage: email value:', email);
+      console.log('LoginPage: password value before send:', password.length, password[0], password[password.length-1]);
       await login(email, password);
       navigate('/dashboard');
     } catch (err: any) {

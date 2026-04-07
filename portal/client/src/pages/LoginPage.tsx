@@ -79,7 +79,7 @@ export default function LoginPage() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-[#a0a0b0] mb-1">Password</label>
-            <input id="password" type="password" required autoComplete="current-password" value={password}
+            <input id="password" type="password" required autoComplete="off" value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 bg-[#181824] border border-[#2d2d44] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#6c5dd3] focus:border-transparent"
               placeholder="••••••••" />

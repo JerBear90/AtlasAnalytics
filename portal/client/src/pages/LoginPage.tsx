@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginAsGuest } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -76,6 +76,14 @@ export default function LoginPage() {
             className="w-full py-3 bg-db-purple hover:bg-db-purple/90 disabled:opacity-50 text-white font-semibold rounded-lg transition cursor-pointer"
           >
             {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { loginAsGuest(); navigate('/dashboard'); }}
+            className="w-full py-3 bg-db-sidebar hover:bg-db-border disabled:opacity-50 text-db-text hover:text-white font-semibold rounded-lg border border-db-border transition cursor-pointer"
+          >
+            Continue as Guest
           </button>
 
           <p className="text-center text-sm text-db-text mt-4">

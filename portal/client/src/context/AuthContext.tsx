@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { UserProfile } from '../types';
+import { UserProfile, UserRole, UserType } from '../types';
 import api from '../api/client';
 
 interface AuthState {
@@ -10,6 +10,7 @@ interface AuthState {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   setAuth: (token: string, user: UserProfile) => void;
+  loginAsGuest: () => void;
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -58,8 +59,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const loginAsGuest = () => {
+    const guestToken = 'guest-token-12345';
+    const guestUser: UserProfile = {
+      id: 'guest',
+      name: 'Guest User',
+      email: 'guest@local',
+      role: UserRole.GUEST,
+      userType: UserType.RETAIL,
+      company: '',
+      subscriber: '',
+      primaryContact: '',
+      servicePeriodStart: '',
+      servicePeriodEnd: '',
+      workbookDescription: '',
+      createdAt: '',
+      updatedAt: '',
+    };
+    setAuth(guestToken, guestUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, setAuth }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, setAuth, loginAsGuest }}>
       {children}
     </AuthContext.Provider>
   );

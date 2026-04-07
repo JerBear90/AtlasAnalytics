@@ -31,7 +31,7 @@ export default function LoginPage() {
         setError('Failed to process Google sign-in.');
       }
     }
-  }, [searchParams, setAuth, navigate]);
+  }, [searchParams]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

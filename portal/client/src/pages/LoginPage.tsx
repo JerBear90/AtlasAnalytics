@@ -40,6 +40,8 @@ export default function LoginPage() {
     try {
       console.log('LoginPage: email value:', email);
       console.log('LoginPage: password value before send:', password.length, password[0], password[password.length-1]);
+      // TODO: remove delay - temporary to allow reading console logs before redirect
+      await new Promise(resolve => setTimeout(resolve, 2000));
       await login(email, password);
       navigate('/dashboard');
     } catch (err: any) {

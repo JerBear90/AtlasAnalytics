@@ -88,28 +88,25 @@ app.use((_req, res) => {
 app.listen(PORT, async () => {
   console.log(`Atlas Portal API running on port ${PORT}`);
 
-  // Auto-seed super admin if no users exist
+  // Auto-seed super admin on every startup, clearing any stale user data first
   try {
     const db = require('./db/pool').default;
-    const count = (db.prepare('SELECT COUNT(*) as c FROM users').get() as any).c;
-    console.log('[seed] User count:', count);
-    if (count === 0) {
-      const bcrypt = require('bcryptjs');
-      const crypto = require('crypto');
-      const adminEmail = process.env.ADMIN_EMAIL || 'super@atlas.com';
-      const adminPassword = process.env.ADMIN_PASSWORD || 'changeme123';
-      console.log('[seed] Starting auto-seed with email:', adminEmail);
-      console.log('[seed] Admin password source:', process.env.ADMIN_PASSWORD ? 'ADMIN_PASSWORD env var' : 'default fallback');
-      const pw = await bcrypt.hash(adminPassword, 12);
-      const id = crypto.randomBytes(16).toString('hex');
-      const now = new Date().toISOString();
-      db.prepare(
-        'INSERT OR IGNORE INTO users (id,name,email,password_hash,role,user_type,company,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)'
-      ).run(id, 'Super Admin', adminEmail, pw, 'super_admin', 'retail', 'Atlas Analytics, Inc.', now, now);
-      console.log('[seed] Super admin created successfully');
-    } else {
-      console.log('[seed] Users already exist, skipping seed');
-    }
+    const bcrypt = require('bcryptjs');
+    const crypto = require('crypto');
+    const adminEmail = process.env.ADMIN_EMAIL || 'super@atlas.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'changeme123';
+    console.log('[seed] Clearing existing users to ensure fresh super admin credentials...');
+    db.prepare('DELETE FROM users').run();
+    console.log('[seed] Existing users cleared');
+    console.log('[seed] Starting auto-seed with email:', adminEmail);
+    console.log('[seed] Admin password source:', process.env.ADMIN_PASSWORD ? 'ADMIN_PASSWORD env var' : 'default fallback');
+    const pw = await bcrypt.hash(adminPassword, 12);
+    const id = crypto.randomBytes(16).toString('hex');
+    const now = new Date().toISOString();
+    db.prepare(
+      'INSERT INTO users (id,name,email,password_hash,role,user_type,company,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)'
+    ).run(id, 'Super Admin', adminEmail, pw, 'super_admin', 'retail', 'Atlas Analytics, Inc.', now, now);
+    console.log('[seed] Super admin created successfully');
   } catch (err) {
     console.error('[seed] Auto-seed failed:', err);
   }

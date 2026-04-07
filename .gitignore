@@ -35,3 +35,4 @@ Thumbs.db
 *.md
 !portal/DEPLOYMENT.md
 !**/README.md
+!REQUIREMENTS.md

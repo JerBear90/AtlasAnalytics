@@ -8,7 +8,7 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 
 const dbPath = process.env.DATABASE_PATH || path.join(DATA_DIR, 'portal.db');
-const db: any = new Database(dbPath);
+const db = new Database(dbPath);
 
 // Enable WAL mode for better concurrent read performance
 db.pragma('journal_mode = WAL');

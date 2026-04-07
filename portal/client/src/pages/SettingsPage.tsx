@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/DashboardLayout';
 import api from '../api/client';
 import { UserRole } from '../types';
+import { useTabVisibility } from '../context/TabVisibilityContext';
 
 export default function SettingsPage() {
   const { user, logout, setAuth } = useAuth();
@@ -33,39 +34,17 @@ export default function SettingsPage() {
   // SSO state (admin only)
   const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
-
-  // Tab visibility (super admin only)
-  const ALL_RETAIL_TABS = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'quarterly', label: 'Quarterly Time Series' },
-    { id: 'weekly', label: 'Weekly Time Series' },
-    { id: 'financial', label: 'Financial Targets' },
-    { id: 'exports', label: 'Net Exports' },
-    { id: 'inventories', label: 'Private Inventories' },
-    { id: 'contents', label: 'Contents' },
-    { id: 'insights', label: 'Insights' },
-    { id: 'support', label: 'Support' },
-  ];
-  const ALL_ACADEMIC_TABS = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'headline_gdp', label: 'Headline GDP' },
-    { id: 'core_gdp', label: 'Core GDP' },
-    { id: 'state_gdp', label: 'State GDP' },
-    { id: 'contents', label: 'Contents' },
-    { id: 'insights', label: 'Insights' },
-    { id: 'support', label: 'Support' },
-  ];
-  const [retailTabs, setRetailTabs] = useState<Record<string, boolean>>({});
-  const [academicTabs, setAcademicTabs] = useState<Record<string, boolean>>({});
-  const [tabsMsg, setTabsMsg] = useState('');
-  const [tabsSaving, setTabsSaving] = useState(false);
-
   const [googleClientId, setGoogleClientId] = useState('');
   const [googleClientSecret, setGoogleClientSecret] = useState('');
   const [googleCallbackUrl, setGoogleCallbackUrl] = useState('');
   const [ssoMsg, setSsoMsg] = useState('');
   const [ssoError, setSsoError] = useState('');
   const [ssoLoading, setSsoLoading] = useState(false);
+
+  // Tab visibility state (super admin only)
+  const { visibility, setVisibility, refresh: refreshTabVisibility } = useTabVisibility();
+  const [tabVisMsg, setTabVisMsg] = useState('');
+  const [tabVisLoading, setTabVisLoading] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -76,20 +55,6 @@ export default function SettingsPage() {
       }).catch(() => {});
     }
   }, [isAdmin]);
-
-  useEffect(() => {
-    if (isSuperAdmin) {
-      api.get('/settings/tabs').then(({ data }) => {
-        const defaultAll = (tabs: { id: string }[]) => {
-          const obj: Record<string, boolean> = {};
-          tabs.forEach(t => { obj[t.id] = true; });
-          return obj;
-        };
-        setRetailTabs(data.retail || defaultAll(ALL_RETAIL_TABS));
-        setAcademicTabs(data.academic || defaultAll(ALL_ACADEMIC_TABS));
-      }).catch(() => {});
-    }
-  }, [isSuperAdmin]);
 
   const handleNameUpdate = async (e: FormEvent) => {
     e.preventDefault();
@@ -140,6 +105,25 @@ export default function SettingsPage() {
     } finally {
       setSsoLoading(false);
     }
+  };
+
+  const handleTabVisibilitySave = async () => {
+    setTabVisMsg('');
+    setTabVisLoading(true);
+    try {
+      const { data } = await api.put('/settings/tab-visibility', visibility);
+      setVisibility(data);
+      await refreshTabVisibility();
+      setTabVisMsg('Tab visibility saved.');
+    } catch {
+      setTabVisMsg('Failed to save tab visibility.');
+    } finally {
+      setTabVisLoading(false);
+    }
+  };
+
+  const toggleTab = (tabId: string) => {
+    setVisibility({ ...visibility, [tabId]: !visibility[tabId] });
   };
 
   const handleProfileSave = async (e: FormEvent) => {
@@ -296,54 +280,75 @@ export default function SettingsPage() {
           </form>
         )}
 
-        {/* Tab Management — Super Admin only */}
+        {/* Tab Visibility — Super Admin only */}
         {isSuperAdmin && (
           <div className="bg-[#1e1e2f] rounded-xl p-6 border border-[#2d2d44] space-y-4">
             <div className="flex items-center gap-2">
               <h2 className="text-base font-semibold text-white">Tab Visibility</h2>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(108,93,211,0.15)] text-[#6c5dd3] font-medium">Super Admin</span>
             </div>
-            <p className="text-[13px] text-[#a0a0b0]">Control which tabs are visible for each user type. Hidden tabs won't appear in the sidebar.</p>
-            {tabsMsg && <p className={`text-sm ${tabsMsg.includes('Failed') ? 'text-[#dc3545]' : 'text-[#198754]'}`}>{tabsMsg}</p>}
+            <p className="text-[13px] text-[#a0a0b0]">
+              Enable or disable sidebar tabs for all users. Disabled tabs will be hidden from the dashboard sidebar.
+            </p>
+            {tabVisMsg && <p className={`text-sm ${tabVisMsg.includes('Failed') ? 'text-[#dc3545]' : 'text-[#198754]'}`}>{tabVisMsg}</p>}
 
-            <div>
-              <h3 className="text-sm font-medium text-white mb-2">Retail User Tabs</h3>
-              <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
-                {ALL_RETAIL_TABS.map(tab => (
-                  <label key={tab.id} className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-[rgba(108,93,211,0.05)]">
-                    <input type="checkbox" checked={retailTabs[tab.id] !== false}
-                      onChange={e => setRetailTabs(prev => ({ ...prev, [tab.id]: e.target.checked }))}
-                      className="w-4 h-4 rounded border-[#2d2d44] bg-[#181824] text-[#6c5dd3] focus:ring-[#6c5dd3] cursor-pointer" />
-                    <span className="text-sm text-[#a0a0b0]">{tab.label}</span>
-                  </label>
-                ))}
+            <div className="space-y-3">
+              <div>
+                <div className="text-[11px] uppercase text-[#a0a0b0] mb-2 tracking-[1px] font-semibold">Data Series (Retail)</div>
+                <div className="space-y-1">
+                  {[{ id: 'overview', label: 'Overview' }, { id: 'quarterly', label: 'Quarterly Time Series' }, { id: 'weekly', label: 'Weekly Time Series' }, { id: 'financial', label: 'Financial Targets' }].map(t => (
+                    <label key={t.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[rgba(108,93,211,0.05)] cursor-pointer">
+                      <input type="checkbox" checked={visibility[t.id] !== false} onChange={() => toggleTab(t.id)}
+                        className="w-4 h-4 rounded border-[#2d2d44] bg-[#181824] text-[#6c5dd3] focus:ring-[#6c5dd3] focus:ring-offset-0 cursor-pointer" />
+                      <span className="text-sm text-white">{t.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[11px] uppercase text-[#a0a0b0] mb-2 tracking-[1px] font-semibold">Data Series (Academic)</div>
+                <div className="space-y-1">
+                  {[{ id: 'headline_gdp', label: 'Headline GDP' }, { id: 'core_gdp', label: 'Core GDP' }, { id: 'state_gdp', label: 'State GDP' }].map(t => (
+                    <label key={t.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[rgba(108,93,211,0.05)] cursor-pointer">
+                      <input type="checkbox" checked={visibility[t.id] !== false} onChange={() => toggleTab(t.id)}
+                        className="w-4 h-4 rounded border-[#2d2d44] bg-[#181824] text-[#6c5dd3] focus:ring-[#6c5dd3] focus:ring-offset-0 cursor-pointer" />
+                      <span className="text-sm text-white">{t.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[11px] uppercase text-[#a0a0b0] mb-2 tracking-[1px] font-semibold">Components</div>
+                <div className="space-y-1">
+                  {[{ id: 'exports', label: 'Net Exports' }, { id: 'inventories', label: 'Private Inventories' }].map(t => (
+                    <label key={t.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[rgba(108,93,211,0.05)] cursor-pointer">
+                      <input type="checkbox" checked={visibility[t.id] !== false} onChange={() => toggleTab(t.id)}
+                        className="w-4 h-4 rounded border-[#2d2d44] bg-[#181824] text-[#6c5dd3] focus:ring-[#6c5dd3] focus:ring-offset-0 cursor-pointer" />
+                      <span className="text-sm text-white">{t.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[11px] uppercase text-[#a0a0b0] mb-2 tracking-[1px] font-semibold">Portal</div>
+                <div className="space-y-1">
+                  {[{ id: 'contents', label: 'Contents' }, { id: 'insights', label: 'Insights' }, { id: 'support', label: 'Support' }].map(t => (
+                    <label key={t.id} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[rgba(108,93,211,0.05)] cursor-pointer">
+                      <input type="checkbox" checked={visibility[t.id] !== false} onChange={() => toggleTab(t.id)}
+                        className="w-4 h-4 rounded border-[#2d2d44] bg-[#181824] text-[#6c5dd3] focus:ring-[#6c5dd3] focus:ring-offset-0 cursor-pointer" />
+                      <span className="text-sm text-white">{t.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div>
-              <h3 className="text-sm font-medium text-white mb-2">Academic User Tabs</h3>
-              <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
-                {ALL_ACADEMIC_TABS.map(tab => (
-                  <label key={tab.id} className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-[rgba(108,93,211,0.05)]">
-                    <input type="checkbox" checked={academicTabs[tab.id] !== false}
-                      onChange={e => setAcademicTabs(prev => ({ ...prev, [tab.id]: e.target.checked }))}
-                      className="w-4 h-4 rounded border-[#2d2d44] bg-[#181824] text-[#6c5dd3] focus:ring-[#6c5dd3] cursor-pointer" />
-                    <span className="text-sm text-[#a0a0b0]">{tab.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <button onClick={async () => {
-              setTabsSaving(true); setTabsMsg('');
-              try {
-                await api.put('/settings/tabs', { retail: retailTabs, academic: academicTabs });
-                setTabsMsg('Tab visibility saved.');
-              } catch { setTabsMsg('Failed to save.'); }
-              setTabsSaving(false);
-            }} disabled={tabsSaving}
+            <button onClick={handleTabVisibilitySave} disabled={tabVisLoading}
               className="px-5 py-2.5 bg-[#6c5dd3] hover:bg-[#6c5dd3]/90 disabled:opacity-50 text-white text-sm font-medium rounded-md transition cursor-pointer">
-              {tabsSaving ? 'Saving...' : 'Save Tab Settings'}
+              {tabVisLoading ? 'Saving...' : 'Save Tab Visibility'}
             </button>
           </div>
         )}

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ViewAsProvider } from './context/ViewAsContext';
+import { TabVisibilityProvider } from './context/TabVisibilityContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
 import SuperAdminRoute from './components/SuperAdminRoute';
@@ -18,6 +19,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ViewAsProvider>
+        <TabVisibilityProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
@@ -29,6 +31,7 @@ function App() {
           <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
+        </TabVisibilityProvider>
         </ViewAsProvider>
       </AuthProvider>
     </BrowserRouter>

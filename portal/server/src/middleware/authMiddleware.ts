@@ -1,5 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService, AuthError } from '../services/authService';
+import { UserProfile } from '../types';
+
+// Extend Express Request to include user
+declare global {
+  namespace Express {
+    interface Request {
+      user?: UserProfile;
+      token?: string;
+    }
+  }
+}
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;

@@ -106,8 +106,9 @@ app.use((_req, res) => {
   });
 });
 
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
   console.log(`Atlas Portal API running on port ${PORT}`);
+<<<<<<< HEAD
 
   // Auto-seed super admin on every startup, clearing any stale user data first
   try {
@@ -134,6 +135,8 @@ app.listen(PORT, async () => {
   } catch (err) {
     console.error('[seed] Auto-seed failed:', err);
   }
+=======
+>>>>>>> 223b9f6 (feat: super admin tab visibility settings)
 });
 
 export default app;

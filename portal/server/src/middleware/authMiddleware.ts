@@ -5,8 +5,9 @@ import { UserProfile } from '../types';
 // Extend Express Request to include user
 declare global {
   namespace Express {
+    // eslint-disable-next-line @typescript-eslint/no-empty-interface
+    interface User extends UserProfile {}
     interface Request {
-      user?: UserProfile;
       token?: string;
     }
   }

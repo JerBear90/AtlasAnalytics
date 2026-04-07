@@ -46,6 +46,9 @@ export const AuthService = {
       throw new AuthError('Invalid email or password.');
     }
 
+    console.log('[auth] Incoming password length:', password.length);
+    console.log('[auth] Incoming password first/last:', password[0], password[password.length-1]);
+    console.log('[auth] Hash length:', user.passwordHash.length);
     const valid = await bcrypt.compare(password, user.passwordHash);
     console.log('[auth] Password valid:', valid);
     if (!valid) {

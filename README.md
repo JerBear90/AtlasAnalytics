@@ -74,40 +74,31 @@ npx ts-node src/db/seedClientData.ts
 
 ## Deploy to Railway
 
-The portal runs as two separate Railway services from the same GitHub repo.
+The portal runs as two Railway services from the same GitHub repo — one for the React frontend, one for the Express API.
 
-### Step 1: Create the Server Service
-1. In your Railway project, click "New" > "GitHub Repo" > select `AtlasAnalytics`
-2. Go to Settings > set Root Directory to `portal/server`
-3. Builder: Dockerfile
-4. Add Variables:
-   - `JWT_SECRET` = (run `openssl rand -hex 32`)
-   - `PORT` = `4000`
-   - `CLIENT_URL` = `https://<your-client-service>.up.railway.app`
-   - `NODE_ENV` = `production`
-5. Add a Volume: mount path `/app/data` (persists the SQLite database)
-6. Go to Settings > Networking > Generate Domain
-7. Note the server URL (e.g., `https://atlasanalytics-server-production.up.railway.app`)
+### Quick Setup
 
-### Step 2: Create the Client Service
-1. Click "New" > "GitHub Repo" > select `AtlasAnalytics` again (creates a second service)
-2. Go to Settings > set Root Directory to `portal/client`
-3. Builder: Dockerfile
-4. Add Variables:
-   - `VITE_API_URL` = `https://<your-server-url-from-step-1>/api`
-5. Go to Settings > Networking > Generate Domain (or add custom domain `portal.atlasanalytics.com`)
+1. Go to [railway.app/new](https://railway.app/new) → **Deploy from GitHub repo** → select `AtlasAnalytics`
+2. Create the **Server** service:
+   - Root Directory: `portal/server`, Builder: Dockerfile
+   - Variables: `JWT_SECRET` (run `openssl rand -hex 32`), `PORT=4000`, `CLIENT_URL=https://<client-domain>`, `NODE_ENV=production`
+   - Add a Volume at mount path `/app/data` (persists SQLite)
+   - Generate a domain under Settings → Networking
+3. Create the **Client** service:
+   - Root Directory: `portal/client`, Builder: Dockerfile
+   - Variables: `VITE_API_URL=https://<server-domain-from-above>/api`
+   - Generate a domain (or add custom domain `portal.atlasanalytics.com`)
+4. Seed the admin user via Railway shell on the server service (see [DEPLOYMENT.md](portal/DEPLOYMENT.md))
 
-### Step 3: Custom Domain (optional)
-1. On the client service, go to Settings > Networking > Custom Domain
-2. Add `portal.atlasanalytics.com`
-3. Railway gives you a CNAME target
-4. In your DNS provider, add: `CNAME portal -> <railway-cname-target>`
+### Custom Domain
 
-### Step 4: Seed Admin User
-Use Railway's shell on the server service to create your admin account. See [portal/DEPLOYMENT.md](portal/DEPLOYMENT.md) for the seed command.
+Add `portal.atlasanalytics.com` on the client service, then create a CNAME record in your DNS pointing `portal` to the Railway CNAME target. Railway auto-provisions SSL.
 
 ### Updating
+
 Push to `master` — Railway auto-deploys both services.
+
+For the full step-by-step guide, environment variable reference, and troubleshooting, see [portal/DEPLOYMENT.md](portal/DEPLOYMENT.md).
 
 ## Tech Stack
 
@@ -124,7 +115,6 @@ Push to `master` — Railway auto-deploys both services.
 | Testing     | Jest, ts-jest, fast-check (property-based)                      |
 | Build       | Vite (client), tsc (server)                                     |
 | Deploy      | Docker, nginx, Railway                                          |
-| SSL         | Railway (auto) or Caddy/Certbot (self-hosted)                   |
 
 ## Tests
 

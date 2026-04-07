@@ -2,7 +2,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useViewAs } from '../context/ViewAsContext';
 import { UserRole, UserType, FilterOptions, DashboardFilters } from '../types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '../api/client';
 
 interface SidebarProps {
   open: boolean;
@@ -55,6 +56,19 @@ export default function Sidebar({
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
   const [quarterDropdownOpen, setQuarterDropdownOpen] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState<string>('all');
+  const [tabVisibility, setTabVisibility] = useState<{ retail: Record<string, boolean> | null; academic: Record<string, boolean> | null }>({ retail: null, academic: null });
+
+  useEffect(() => {
+    api.get('/settings/tabs').then(({ data }) => {
+      setTabVisibility({ retail: data.retail, academic: data.academic });
+    }).catch(() => {});
+  }, []);
+
+  const filterTabs = (tabs: { id: string; label: string }[]) => {
+    const vis = isAcademic ? tabVisibility.academic : tabVisibility.retail;
+    if (!vis) return tabs; // no settings saved yet, show all
+    return tabs.filter(t => vis[t.id] !== false);
+  };
 
   const handleTabClick = (tab: string) => {
     onTabChange?.(tab);
@@ -163,7 +177,7 @@ export default function Sidebar({
           <>
             <div className="mb-6">
               <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Data Series</div>
-              {(isAcademic ? ACADEMIC_DATA_TABS : RETAIL_DATA_TABS).map(tabItem)}
+              {filterTabs(isAcademic ? ACADEMIC_DATA_TABS : RETAIL_DATA_TABS).map(tabItem)}
             </div>
 
             {/* Filters */}
@@ -222,16 +236,16 @@ export default function Sidebar({
               </div>
             )}
 
-            {!isAcademic && (
+            {!isAcademic && filterTabs(RETAIL_COMPONENT_TABS).length > 0 && (
               <div className="mb-6">
                 <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Components</div>
-                {RETAIL_COMPONENT_TABS.map(tabItem)}
+                {filterTabs(RETAIL_COMPONENT_TABS).map(tabItem)}
               </div>
             )}
 
             <div className="mb-6">
               <div className="text-[11px] uppercase text-[#a0a0b0] mb-2.5 tracking-[1px] font-semibold">Portal</div>
-              {PORTAL_TABS.map(tabItem)}
+              {filterTabs(PORTAL_TABS).map(tabItem)}
             </div>
           </>
         )}

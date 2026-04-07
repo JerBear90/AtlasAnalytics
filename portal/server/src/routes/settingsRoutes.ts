@@ -1,11 +1,41 @@
 import { Router, Request, Response } from 'express';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { requireAdmin } from '../middleware/roleMiddleware';
+import { requireSuperAdmin } from '../middleware/roleMiddleware';
 import { SettingsRepository } from '../repositories/settingsRepository';
 
 const router = Router();
 
 router.use(authMiddleware);
+
+// Tab visibility — any authenticated user can read, super admin can write
+// GET /api/settings/tabs
+router.get('/tabs', (_req: Request, res: Response) => {
+  try {
+    const retail = SettingsRepository.get('visible_tabs_retail');
+    const academic = SettingsRepository.get('visible_tabs_academic');
+    res.json({
+      retail: retail ? JSON.parse(retail) : null,
+      academic: academic ? JSON.parse(academic) : null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load tab settings.' });
+  }
+});
+
+// PUT /api/settings/tabs (super admin only)
+router.put('/tabs', requireSuperAdmin, (req: Request, res: Response) => {
+  try {
+    const { retail, academic } = req.body;
+    if (retail) SettingsRepository.set('visible_tabs_retail', JSON.stringify(retail));
+    if (academic) SettingsRepository.set('visible_tabs_academic', JSON.stringify(academic));
+    res.json({ message: 'Tab visibility updated.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update tab settings.' });
+  }
+});
+
+// SSO and other settings require admin
 router.use(requireAdmin);
 
 const SSO_KEYS = ['google_client_id', 'google_client_secret', 'google_callback_url'];

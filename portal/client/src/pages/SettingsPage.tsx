@@ -32,6 +32,34 @@ export default function SettingsPage() {
 
   // SSO state (admin only)
   const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+
+  // Tab visibility (super admin only)
+  const ALL_RETAIL_TABS = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'quarterly', label: 'Quarterly Time Series' },
+    { id: 'weekly', label: 'Weekly Time Series' },
+    { id: 'financial', label: 'Financial Targets' },
+    { id: 'exports', label: 'Net Exports' },
+    { id: 'inventories', label: 'Private Inventories' },
+    { id: 'contents', label: 'Contents' },
+    { id: 'insights', label: 'Insights' },
+    { id: 'support', label: 'Support' },
+  ];
+  const ALL_ACADEMIC_TABS = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'headline_gdp', label: 'Headline GDP' },
+    { id: 'core_gdp', label: 'Core GDP' },
+    { id: 'state_gdp', label: 'State GDP' },
+    { id: 'contents', label: 'Contents' },
+    { id: 'insights', label: 'Insights' },
+    { id: 'support', label: 'Support' },
+  ];
+  const [retailTabs, setRetailTabs] = useState<Record<string, boolean>>({});
+  const [academicTabs, setAcademicTabs] = useState<Record<string, boolean>>({});
+  const [tabsMsg, setTabsMsg] = useState('');
+  const [tabsSaving, setTabsSaving] = useState(false);
+
   const [googleClientId, setGoogleClientId] = useState('');
   const [googleClientSecret, setGoogleClientSecret] = useState('');
   const [googleCallbackUrl, setGoogleCallbackUrl] = useState('');
@@ -48,6 +76,20 @@ export default function SettingsPage() {
       }).catch(() => {});
     }
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      api.get('/settings/tabs').then(({ data }) => {
+        const defaultAll = (tabs: { id: string }[]) => {
+          const obj: Record<string, boolean> = {};
+          tabs.forEach(t => { obj[t.id] = true; });
+          return obj;
+        };
+        setRetailTabs(data.retail || defaultAll(ALL_RETAIL_TABS));
+        setAcademicTabs(data.academic || defaultAll(ALL_ACADEMIC_TABS));
+      }).catch(() => {});
+    }
+  }, [isSuperAdmin]);
 
   const handleNameUpdate = async (e: FormEvent) => {
     e.preventDefault();
@@ -252,6 +294,58 @@ export default function SettingsPage() {
               {ssoLoading ? 'Saving...' : 'Save SSO Settings'}
             </button>
           </form>
+        )}
+
+        {/* Tab Management — Super Admin only */}
+        {isSuperAdmin && (
+          <div className="bg-[#1e1e2f] rounded-xl p-6 border border-[#2d2d44] space-y-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-semibold text-white">Tab Visibility</h2>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[rgba(108,93,211,0.15)] text-[#6c5dd3] font-medium">Super Admin</span>
+            </div>
+            <p className="text-[13px] text-[#a0a0b0]">Control which tabs are visible for each user type. Hidden tabs won't appear in the sidebar.</p>
+            {tabsMsg && <p className={`text-sm ${tabsMsg.includes('Failed') ? 'text-[#dc3545]' : 'text-[#198754]'}`}>{tabsMsg}</p>}
+
+            <div>
+              <h3 className="text-sm font-medium text-white mb-2">Retail User Tabs</h3>
+              <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
+                {ALL_RETAIL_TABS.map(tab => (
+                  <label key={tab.id} className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-[rgba(108,93,211,0.05)]">
+                    <input type="checkbox" checked={retailTabs[tab.id] !== false}
+                      onChange={e => setRetailTabs(prev => ({ ...prev, [tab.id]: e.target.checked }))}
+                      className="w-4 h-4 rounded border-[#2d2d44] bg-[#181824] text-[#6c5dd3] focus:ring-[#6c5dd3] cursor-pointer" />
+                    <span className="text-sm text-[#a0a0b0]">{tab.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium text-white mb-2">Academic User Tabs</h3>
+              <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
+                {ALL_ACADEMIC_TABS.map(tab => (
+                  <label key={tab.id} className="flex items-center gap-2 cursor-pointer px-3 py-2 rounded-lg hover:bg-[rgba(108,93,211,0.05)]">
+                    <input type="checkbox" checked={academicTabs[tab.id] !== false}
+                      onChange={e => setAcademicTabs(prev => ({ ...prev, [tab.id]: e.target.checked }))}
+                      className="w-4 h-4 rounded border-[#2d2d44] bg-[#181824] text-[#6c5dd3] focus:ring-[#6c5dd3] cursor-pointer" />
+                    <span className="text-sm text-[#a0a0b0]">{tab.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <button onClick={async () => {
+              setTabsSaving(true); setTabsMsg('');
+              try {
+                await api.put('/settings/tabs', { retail: retailTabs, academic: academicTabs });
+                setTabsMsg('Tab visibility saved.');
+              } catch { setTabsMsg('Failed to save.'); }
+              setTabsSaving(false);
+            }} disabled={tabsSaving}
+              className="px-5 py-2.5 bg-[#6c5dd3] hover:bg-[#6c5dd3]/90 disabled:opacity-50 text-white text-sm font-medium rounded-md transition cursor-pointer">
+              {tabsSaving ? 'Saving...' : 'Save Tab Settings'}
+            </button>
+          </div>
         )}
 
         <div className="bg-[#1e1e2f] rounded-xl p-6 border border-[#2d2d44]">

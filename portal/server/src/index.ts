@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import bcrypt from 'bcryptjs';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import csvRoutes from './routes/csvRoutes';
@@ -10,6 +11,7 @@ import dashboardRoutes from './routes/dashboardRoutes';
 import exportRoutes from './routes/exportRoutes';
 import settingsRoutes from './routes/settingsRoutes';
 import { errorHandler } from './middleware/errorHandler';
+import { UserRepository } from './repositories/userRepository';
 
 dotenv.config();
 
@@ -63,6 +65,25 @@ app.disable('x-powered-by');
 // Health check
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Temporary admin password reset endpoint (no auth required — for setup only)
+app.post('/api/admin/reset-password', async (req, res) => {
+  const { newPassword } = req.body as { newPassword?: string };
+  if (!newPassword || typeof newPassword !== 'string' || newPassword.trim() === '') {
+    res.status(400).json({ error: 'newPassword is required' });
+    return;
+  }
+  const adminEmail = 'super@atlas.com';
+  const user = await UserRepository.findByEmail(adminEmail);
+  if (!user) {
+    res.status(404).json({ error: `Admin user ${adminEmail} not found` });
+    return;
+  }
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await UserRepository.updatePassword(user.id, passwordHash);
+  console.log('[admin] Password reset for super@atlas.com');
+  res.json({ success: true, message: 'Admin password has been reset successfully' });
 });
 
 // API routes

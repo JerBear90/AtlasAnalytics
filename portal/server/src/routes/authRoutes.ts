@@ -72,12 +72,17 @@ router.post('/login', async (req: Request, res: Response) => {
       res.status(400).json({ error: 'Email and password are required.' });
       return;
     }
+    console.log('[auth] Login attempt received for email:', email);
+    console.log('[auth] Calling AuthService.login()');
     const result = await AuthService.login(email, password);
+    console.log('[auth] Login successful for email:', email, '| userId:', result.user.id);
     res.json(result);
   } catch (err) {
     if (err instanceof AuthError) {
+      console.log('[auth] Login failed for email:', req.body?.email, '| reason:', err.message, '| status:', err.statusCode);
       res.status(err.statusCode).json({ error: err.message });
     } else {
+      console.error('[auth] Unexpected error during login for email:', req.body?.email, err);
       res.status(500).json({ error: 'Internal server error.' });
     }
   }

@@ -41,11 +41,13 @@ export const AuthService = {
 
   async login(email: string, password: string): Promise<{ token: string; user: UserProfile }> {
     const user = await UserRepository.findByEmail(email);
+    console.log('[auth] User found:', !!user, '| has password hash:', !!(user?.passwordHash));
     if (!user || !user.passwordHash) {
       throw new AuthError('Invalid email or password.');
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
+    console.log('[auth] Password valid:', valid);
     if (!valid) {
       throw new AuthError('Invalid email or password.');
     }
